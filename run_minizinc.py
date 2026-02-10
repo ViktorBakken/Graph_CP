@@ -3,15 +3,19 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 nodes = [1, 2, 3, 4]
-edges = [(1, 2, 25), (2, 1, 25),(2, 3, 16),(3, 2, 16), (3, 4, 1), (4, 3, 1),(4, 1, 10),  (1, 4, 10)]
+edges = [(1, 2, -25), (2, 1, -25),(2, 3, -16),(3, 2, -16), (3, 4, -1), (4, 3, -1),(4, 1, -10),  (1, 4, -10)]
 tail, head, c = map(list, zip(*edges))
+mini = min(c)
+new_c=[e+abs(mini)+1 for e in c]
+
+new_edges=list(zip(tail, head, new_c))
+print(new_edges)
+
 b= [1,0,-1,0]
 k=2
-print(tail)
-print(head)
-print(c)
+
 # Load a solver (Gecode is bundled with MiniZinc)
-solver = Solver.lookup("gecode")
+solver = Solver.lookup("coin-bc")
 
 # Load the model
 model = Model("Solver.mzn")
@@ -25,22 +29,22 @@ instance["n"] = len(nodes)
 instance["m"] = len(edges)
 instance["i"] = tail
 instance["j"] = head
-instance["c"] = c
+instance["c"] = new_c
 instance["b"] = b
 
 # Solve
-# result = instance.solve()
+result = instance.solve()
 
-# print(result)
-removed = [x for x, m in zip(edges, [0, 0, 1, 1, 1, 1, 0, 0]) if m]
-remaining = [x for x, m in zip(edges, [0, 0, 1, 1, 1, 1, 0, 0]) if not m]
+print(result)
+removed = [x for x, m in zip(new_edges, result["x"]) if m]
+remaining = [x for x, m in zip(new_edges, result["x"]) if not m]
 
 print("Selected edges to remove:")
 print(removed)
 
 
 #Print first graph
-G = nx.Graph()
+G = nx.DiGraph()
 colorStates = {"I": "yellow", "S": "green", "B":"blue"}
 
 for node in nodes: 
@@ -49,7 +53,7 @@ for node in nodes:
     
 G.nodes[1]["state"]="I" 
 G.nodes[3]["state"]="B"
-G.add_weighted_edges_from(edges)
+G.add_weighted_edges_from(new_edges)
 
 colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]
 

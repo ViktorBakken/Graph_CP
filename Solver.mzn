@@ -32,6 +32,9 @@ constraint forall(e in E)(
 %beta_ij - M_ij*x_ij <= w_ij
 constraint forall(e in E)(beta[e] - M*x[e] <= w[e]);
 
+int: s=1;
+constraint forall(e in E where i[e]!=s /\ j[e]!=s)(x[e]=0);
+
 % Objective
 var int: obj= sum(v in V)(b[v] * pi[v]) - sum(w);
 
