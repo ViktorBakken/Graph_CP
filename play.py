@@ -1,143 +1,38 @@
-import igraph as ig
+import networkx as nx
 import matplotlib.pyplot as plt
 
 # Data
-nodes = ["A", "B", "C", "D"]
-edges = [
-    ("A", "B", 1), ("B", "C", 4), ("C", "D", 3), ("D", "A", 2),
-    ("B", "A", 3), ("C", "B", 2), ("D", "C", 3), ("A", "D", 3)
+nodes=[1,2,3,4,5,6,7,8]
+edges = [  (1, 7, 30),  (7, 1, 30),  (1, 8, 30),  (8, 1, 30),  (2, 7, 30),  (7, 2, 30),  (2, 8, 30),  (8, 2, 30),  (3, 7, 30),  (7, 3, 30),  (3, 8, 30),  (8, 3, 30),  (4, 5, 30),  (5, 4, 30),  (4, 6, 22),  (6, 4, 22),  (4, 7, 30),  (7, 4, 30),  (4, 8, 30),  (8, 4, 30),  (5, 7, 30),  (7, 5, 30),  (5, 8, 30),  (8, 5, 30),  (6, 7, 30),  (7, 6, 30),  (6, 8, 30),  (8, 6, 30),  (7, 8, 30),  (8, 7, 30)]
+#Print first graph
+G = nx.DiGraph()
+colorStates = {"I": "yellow", "S": "green", "B":"blue"}
+
+for node in nodes: 
+    G.add_node(node) 
+    G.nodes[node]["state"]="S" 
+    
+G.nodes[1]["state"]="I" 
+G.nodes[3]["state"]="B"
+G.add_weighted_edges_from(edges)
+
+colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]
+
+# Layout
+layout = nx.spring_layout(G)
+nx.draw(G, layout, node_color=colors,with_labels=True)
+edge_labels = nx.get_edge_attributes(G, "weight")
+nx.draw_networkx_edge_labels(G, layout, edge_labels=edge_labels)
+
+from matplotlib.patches import Patch
+
+label_map = {"I": "Infected", "S": "Susceptible", "B": "Goal"}
+
+legend_handles = [
+    Patch(facecolor=color, edgecolor="black", label=label_map[state])
+    for state, color in colorStates.items()
 ]
-colorStates = {"I": "yellow", "S": "green"}
 
-g = ig.Graph(directed=True)
-g.add_vertices(nodes)
-
-# Vertex attributes (state)
-g.vs["state"] = ["S"] * g.vcount()
-g.vs.find(name="A")["state"] = "I"
-
-# Edges + weights
-g.add_edges([(u, v) for (u, v, _) in edges])
-g.es["weight"] = [w for (_, _, w) in edges]
-
-vertex_colors = [colorStates[s] for s in g.vs["state"]]
-
-# Layout
-layout = g.layout("fr")
-
-fig, ax = plt.subplots(figsize=(7, 4))
-
-ig.plot(
-    g,
-    target=ax,
-    layout=layout,
-    bbox=(700, 700),     # larger drawing box
-    margin=30,           # extra padding so labels don't hit the border
-    vertex_color=vertex_colors,
-    vertex_label=g.vs["name"],
-    edge_label=g.es["weight"],
-    autocurve=True,      # nicer for opposite-direction edges
-    edge_arrow_size=0.6,
-    edge_label_dist=0.8  # push labels a bit away from the edges
-)
-
-# Disable clipping for labels (weights + vertex labels) so nothing gets cut off
-for t in ax.texts:
-    t.set_clip_on(False)
-
-ax.set_axis_off()
-plt.tight_layout()
-plt.show()
-
-
-
-# Data
-nodes = ["A", "B", "C", "D"]
-edges = [("A", "B", 25), ("B", "C", 16), ("C", "D", 1), ("D", "A", 10)]
-colorStates = {"I": "yellow", "S": "green"}
-
-g = ig.Graph(directed=False)
-g.add_vertices(nodes)
-
-# Vertex attributes (state)
-g.vs["state"] = ["S"] * g.vcount()
-g.vs.find(name="A")["state"] = "I"
-
-# Edges + weights
-g.add_edges([(u, v) for (u, v, _) in edges])
-g.es["weight"] = [w for (_, _, w) in edges]
-
-vertex_colors = [colorStates[s] for s in g.vs["state"]]
-
-# Layout
-layout = g.layout("fr")
-
-fig, ax = plt.subplots(figsize=(7, 4))
-
-ig.plot(
-    g,
-    target=ax,
-    layout=layout,
-    bbox=(700, 400),     # larger drawing box
-    margin=10,           # extra padding so labels don't hit the border
-    vertex_color=vertex_colors,
-    vertex_label=g.vs["name"],
-    edge_label=g.es["weight"],
-    autocurve=True,      # nicer for opposite-direction edges
-    edge_arrow_size=0.6,
-    edge_label_dist=0.3  # push labels a bit away from the edges
-)
-
-# Disable clipping for labels (weights + vertex labels) so nothing gets cut off
-for t in ax.texts:
-    t.set_clip_on(False)
-
-# ax.set_axis_off()
-plt.tight_layout()
-plt.show()
-
-# Data
-nodes = ["A", "B", "C", "D"]
-edges = [("A", "B", 25), ("B", "C", 16), ("C", "D", 1.2)]
-colorStates = {"I": "yellow", "S": "green"}
-
-g = ig.Graph(directed=False)
-g.add_vertices(nodes)
-
-# Vertex attributes (state)
-g.vs["state"] = ["S"] * g.vcount()
-g.vs.find(name="A")["state"] = "I"
-
-# Edges + weights
-g.add_edges([(u, v) for (u, v, _) in edges])
-g.es["weight"] = [w for (_, _, w) in edges]
-
-vertex_colors = [colorStates[s] for s in g.vs["state"]]
-
-# Layout
-layout = g.layout("fr")
-
-fig, ax = plt.subplots(figsize=(7, 4))
-
-ig.plot(
-    g,
-    target=ax,
-    layout=layout,
-    bbox=(700, 400),     # larger drawing box
-    margin=70,           # extra padding so labels don't hit the border
-    vertex_color=vertex_colors,
-    vertex_label=g.vs["name"],
-    edge_label=g.es["weight"],
-    autocurve=True,      # nicer for opposite-direction edges
-    edge_arrow_size=0.6,
-    edge_label_dist=0.8  # push labels a bit away from the edges
-)
-
-# Disable clipping for labels (weights + vertex labels) so nothing gets cut off
-for t in ax.texts:
-    t.set_clip_on(False)
-
-ax.set_axis_off()
-plt.tight_layout()
+plt.legend(handles=legend_handles, title="State")
 plt.show()
 

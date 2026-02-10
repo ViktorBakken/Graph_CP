@@ -2,8 +2,11 @@ from minizinc import Instance, Model, Solver
 import matplotlib.pyplot as plt
 import networkx as nx
 
-nodes = [1, 2, 3, 4]
-edges = [(1, 2, -25), (2, 1, -25),(2, 3, -16),(3, 2, -16), (3, 4, -1), (4, 3, -1),(4, 1, -10),  (1, 4, -10)]
+s=0
+t=4
+k=4
+nodes=[1,2,3,4,5,6,7,8,9,10]
+edges = [  (1, 2, 7),  (2, 1, 7),  (1, 4, 23),  (4, 1, 23),  (1, 5, 4),  (5, 1, 4),  (1, 7, 3),  (7, 1, 3),  (1, 8, 5),  (8, 1, 5),  (1, 9, 1),  (9, 1, 1),  (2, 4, 10),  (4, 2, 10),  (2, 5, 30),  (5, 2, 30),  (2, 7, 11),  (7, 2, 11),  (2, 8, 1),  (8, 2, 1),  (2, 9, 4),  (9, 2, 4),  (2, 10, 6),  (10, 2, 6),  (3, 8, 6),  (8, 3, 6),  (4, 9, 22),  (9, 4, 22),  (4, 10, 30),  (10, 4, 30),  (5, 7, 6),  (7, 5, 6),  (5, 8, 7),  (8, 5, 7),  (5, 9, 2),  (9, 5, 2),  (6, 7, 20),  (7, 6, 20),  (7, 8, 30),  (8, 7, 30),  (8, 9, 11),  (9, 8, 11)]
 tail, head, c = map(list, zip(*edges))
 mini = min(c)
 new_c=[e+abs(mini)+1 for e in c]
@@ -11,11 +14,12 @@ new_c=[e+abs(mini)+1 for e in c]
 new_edges=list(zip(tail, head, new_c))
 print(new_edges)
 
-b= [1,0,-1,0]
-k=2
+b= [0 for e in range(len(nodes))]
+b[s]=1
+b[t]=-1
 
 # Load a solver (Gecode is bundled with MiniZinc)
-solver = Solver.lookup("coin-bc")
+solver = Solver.lookup("highs")
 
 # Load the model
 model = Model("Solver.mzn")
@@ -25,6 +29,7 @@ instance = Instance(solver, model)
 
 # Pass data from Python to MiniZinc
 instance["K"] = k*2
+instance["s"] = s+1
 instance["n"] = len(nodes)
 instance["m"] = len(edges)
 instance["i"] = tail
@@ -36,9 +41,10 @@ instance["b"] = b
 result = instance.solve()
 
 print(result)
-removed = [x for x, m in zip(new_edges, result["x"]) if m]
-remaining = [x for x, m in zip(new_edges, result["x"]) if not m]
-
+# removed = [x for x, m in zip(new_edges, result["x"]) if m]
+# remaining = [x for x, m in zip(new_edges, result["x"]) if not m]
+removed = [x for x, m in zip(edges, result["x"]) if m]
+remaining = [x for x, m in zip(edges, result["x"]) if not m]
 print("Selected edges to remove:")
 print(removed)
 
@@ -51,9 +57,10 @@ for node in nodes:
     G.add_node(node) 
     G.nodes[node]["state"]="S" 
     
-G.nodes[1]["state"]="I" 
-G.nodes[3]["state"]="B"
-G.add_weighted_edges_from(new_edges)
+G.nodes[s+1]["state"]="I" 
+G.nodes[t+1]["state"]="B"
+# G.add_weighted_edges_from(new_edges)
+G.add_weighted_edges_from(edges)
 
 colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]
 
@@ -85,8 +92,8 @@ for node in nodes:
     G.add_node(node) 
     G.nodes[node]["state"]="S" 
     
-G.nodes[1]["state"]="I" 
-G.nodes[3]["state"]="B"
+G.nodes[s+1]["state"]="I" 
+G.nodes[t+1]["state"]="B"
 G.add_weighted_edges_from(remaining)
 
 colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]
