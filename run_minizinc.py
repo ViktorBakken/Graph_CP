@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 s=0
-t=4
+t=2
 k=4
 nodes=[1,2,3,4,5,6,7,8,9,10]
 edges = [  (1, 2, 7),  (2, 1, 7),  (1, 4, 23),  (4, 1, 23),  (1, 5, 4),  (5, 1, 4),  (1, 7, 3),  (7, 1, 3),  (1, 8, 5),  (8, 1, 5),  (1, 9, 1),  (9, 1, 1),  (2, 4, 10),  (4, 2, 10),  (2, 5, 30),  (5, 2, 30),  (2, 7, 11),  (7, 2, 11),  (2, 8, 1),  (8, 2, 1),  (2, 9, 4),  (9, 2, 4),  (2, 10, 6),  (10, 2, 6),  (3, 8, 6),  (8, 3, 6),  (4, 9, 22),  (9, 4, 22),  (4, 10, 30),  (10, 4, 30),  (5, 7, 6),  (7, 5, 6),  (5, 8, 7),  (8, 5, 7),  (5, 9, 2),  (9, 5, 2),  (6, 7, 20),  (7, 6, 20),  (7, 8, 30),  (8, 7, 30),  (8, 9, 11),  (9, 8, 11)]
@@ -18,8 +18,8 @@ b= [0 for e in range(len(nodes))]
 b[s]=1
 b[t]=-1
 
-# Load a solver (Gecode is bundled with MiniZinc)
-solver = Solver.lookup("highs")
+# Load a solver
+solver = Solver.lookup("coin-bc")
 
 # Load the model
 model = Model("Solver.mzn")
