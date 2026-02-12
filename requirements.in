@@ -4,3 +4,4 @@ NetworkX
 igraph
 matplotlib
 minizinc
+scipy

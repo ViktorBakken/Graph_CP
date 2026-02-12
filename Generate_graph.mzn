@@ -5,8 +5,8 @@ include "globals.mzn";
 % Outputs a bidirectional edge list: (from,to,cost) and (to,from,cost)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-int: n  = 10;        % number of nodes
-int: cl = 3;        % number of clusters
+int: n  = 20;        % number of nodes
+int: cl = 6;        % number of clusters
 % int: m  = 10;       % number of undirected edges (0..n*(n-1)/2)
 
 

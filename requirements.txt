@@ -22,6 +22,7 @@ numpy==2.4.1
     #   contourpy
     #   matplotlib
     #   pandas
+    #   scipy
 packaging==26.0
     # via matplotlib
 pandas==3.0.0
@@ -34,6 +35,8 @@ python-dateutil==2.9.0.post0
     # via
     #   matplotlib
     #   pandas
+scipy==1.17.0
+    # via -r requirements.in
 six==1.17.0
     # via python-dateutil
 texttable==1.7.0
