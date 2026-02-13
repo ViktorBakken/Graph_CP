@@ -2,25 +2,28 @@ from minizinc import Instance, Model, Solver
 import matplotlib.pyplot as plt
 import networkx as nx
 
-S=[0,1,5]
-t=6
-k=1
+S={1,2,8}
+T={5,6}
+k=2
 
-n=7
+n=9 
 nodes=[i+1 for i in range(n)]
-edges = [(1, 2, 21), (2, 1, 21), (1, 3, 4), (3, 1, 4), (1, 4, 1), (4, 1, 1), (2, 3, 24), (3, 2, 24), (2, 4, 9), (4, 2, 9), (3, 4, 8), (4, 3, 8), (5, 6, 8), (6, 5, 8), (5, 7, 5), (7, 5, 5), (6, 7, 24), (7, 6, 24), (1, 7, 24), (7, 1, 24)]
-
+edges = [(1, 2, 21), (2, 1, 21), (1, 3, 4), (3, 1, 4), (2, 3, 1), (3, 2, 1), (4, 5, 24), (5, 4, 24), (4, 6, 9), (6, 4, 9), (5, 6, 8), (6, 5, 8), (7, 8, 8), (8, 7, 8), (7, 9, 5), (9, 7, 5), (8, 9, 24), (9, 8, 24), (1, 6, 24), (6, 1, 24), (5, 7, 1), (7, 5, 1), (4, 7, 8), (7, 4, 8)]
 tail, head, c = map(list, zip(*edges))
 mini = min(c)
 new_c=[e+abs(mini)+1 for e in c]
 
 new_edges=list(zip(tail, head, new_c))
 
-b= [1 if(e in S) else 0 for e in range(len(nodes))]
-b[t]=-1
-
+b=[0]*n
+for i in range(n):
+    if i in S:
+        b[i]=1
+    elif i in T:
+        b[i]=-1
+print(b)
 # Load a solver
-solver = Solver.lookup("chuffed")
+solver = Solver.lookup("coin-bc")
 
 # Load the model
 model = Model("Solver_node.mzn")
@@ -30,7 +33,6 @@ instance = Instance(solver, model)
 
 # Pass data from Python to MiniZinc
 instance["K"] = k
-instance["t"] = t+1
 instance["n"] = len(nodes)
 instance["m"] = len(edges)
 instance["i"] = tail
@@ -69,7 +71,8 @@ for node in nodes:
     
 for s in S:
     G.nodes[s+1]["state"]="I" 
-G.nodes[t+1]["state"]="B"
+for t in T:
+    G.nodes[t+1]["state"]="B"
 G.add_weighted_edges_from(new_edges)
 # G.add_weighted_edges_from(edges)
 
@@ -104,9 +107,9 @@ for node in node_remaining:
     G.nodes[node]["state"]="S" 
 
 for s in infected_remaining:
-    if(len(S)>0):
-        G.nodes[s+1]["state"]="I" 
-G.nodes[t+1]["state"]="B"
+    G.nodes[s+1]["state"]="I" 
+for t in T:
+    G.nodes[t+1]["state"]="B"
 G.add_weighted_edges_from(edge_remaining)
 
 colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]

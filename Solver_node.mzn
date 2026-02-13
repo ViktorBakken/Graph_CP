@@ -2,7 +2,6 @@
 int: n; % number of nodes
 int: m; % number of undirectional edges
 int: K; % budget
-int: t; % target
 set of int: V=1..n; % set of nodes
 set of int: E=1..m; % set of edges
 
@@ -12,6 +11,7 @@ array[E] of int: c; % the cost vector of edges
 array[V] of int: b; % the vector of start node and ending node
 
 set of int: S={s | s in index_set(b) where b[s]=1};
+set of int: T={t | t in index_set(b) where b[t]=-1};
 
 % Decsion Variables
 int: M = sum(c);  % upperbound of beta
@@ -24,7 +24,7 @@ array[V] of var 0..1: z; % interdiction vector
 
 % Constraints
 constraint forall(s in S)(pi[s]=0);
-constraint z[t]=0;
+constraint forall(t in T)(z[t]=0);
 
 
 % constraint forall(e in E)(0 <= w[e]);
@@ -63,5 +63,5 @@ output [
   "pi=", show(pi), "\n",
   "beta=", show(beta), "\n",
   "z=", show(z), "\n",
-  "s=", show(S), ", t=", show(t),"\n"
+  "s=", show(S), ", t=", show(T),"\n"
 ]
