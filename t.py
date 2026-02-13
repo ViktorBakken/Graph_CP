@@ -1,49 +1,103 @@
-import numpy as np
-import matplotlib.pyplot as plt
+from __future__ import annotations
+import random
+from typing import List, Tuple
 
-def pi(x):
-    if(x < 0):
-        return 1/((10+np.abs(x))**4)
-    if(x < 1):
-        return 0.9
-    if(x < 2):
-        return 0.1
-    if(2 <= x):
-        return 1/((10+np.abs(x))**4)
 
-def q(x):
-    return np.random.normal(x,1)
+Edge = Tuple[int, int, int]
 
-def q_pdf(x_prev,x):
-    mu=x_prev
-    sigma2=1**2
-    return 1/(np.sqrt(2*np.pi*sigma2))*np.exp(-0.5*((x-mu)**2)/sigma2)
 
-L=10000
-x_0 = -100
-x=x_0
-x_sample=np.zeros(L+1)
+def make_clusters(n: int, c: int) -> List[List[int]]:
+    if n <= 0:
+        raise ValueError("n must be > 0")
+    if c <= 0 or c > n:
+        raise ValueError("c must be in [1, n]")
 
-accepted=0
-for n in range(L):
-    x_prim= q(x)
+    nodes = list(range(1, n + 1))
+    base, rem = divmod(n, c)
 
-    a= (pi(x_prim)*q_pdf(x,x_prim))/(pi(x)*q_pdf(x_prim,x))
-    
-    if(np.random.uniform(0,1)<a):
-        x= x_prim
-        accepted+=1
-    x_sample[n+1]=x
+    clusters = []
+    idx = 0
+    for i in range(c):
+        size = base + (1 if i < rem else 0)
+        clusters.append(nodes[idx: idx + size])
+        idx += size
 
-sample = np. linspace (0, L, L+1)
-burn_in=0
-print("Acceptance rate: "+str( accepted /L))
+    return clusters
 
-# plt.plot(x_sample[burn_in:])
-# plt.show ()
 
-# plt. scatter (sample[burn_in:], x_sample)
-# plt.show ()
+def complete_bidirectional_weighted_edges(
+    nodes: List[int],
+    rng: random.Random,
+    wmin: int = 1,
+    wmax: int = 30,
+) -> List[Edge]:
+    """
+    Complete digraph with shared weight for (u,v) and (v,u).
+    """
+    edges: List[Edge] = []
+    for i, u in enumerate(nodes):
+        for v in nodes[i + 1:]:
+            w = rng.randint(wmin, wmax)
+            edges.append((u, v, w))
+            edges.append((v, u, w))
+    return edges
 
-# plt.hist( x_sample[burn_in:], bins =20)
-# plt.show ()
+
+def clustered_bidirectional_weighted_graph(
+    n: int,
+    c: int,
+    bridges_per_adjacent_cluster_pair: int = 1,
+    wmin: int = 1,
+    wmax: int = 30,
+    seed: int | None = 0,
+) -> Tuple[List[Edge], List[List[int]]]:
+    rng = random.Random(seed)
+    clusters = make_clusters(n, c)
+
+    edges: List[Edge] = []
+
+    # Dense intra-cluster edges
+    for cl in clusters:
+        edges.extend(
+            complete_bidirectional_weighted_edges(cl, rng, wmin, wmax)
+        )
+
+    # Sparse inter-cluster bridges (chain structure)
+    for i in range(c - 1):
+        A = clusters[i]
+        B = clusters[i + 1]
+
+        for _ in range(max(1, bridges_per_adjacent_cluster_pair)):
+            u = rng.choice(A)
+            v = rng.choice(B)
+            w = rng.randint(wmin, wmax)
+            edges.append((u, v, w))
+            edges.append((v, u, w))
+
+    # Remove duplicates (safe for repeated bridges)
+    seen = set()
+    unique_edges = []
+    for u, v, w in edges:
+        key = (u, v)
+        if key not in seen:
+            seen.add(key)
+            unique_edges.append((u, v, w))
+
+    return unique_edges, clusters
+
+
+if __name__ == "__main__":
+    n = 7
+    c = 2
+
+    edges, clusters = clustered_bidirectional_weighted_graph(
+        n=n,
+        c=c,
+        bridges_per_adjacent_cluster_pair=2,
+        seed=42,
+    )
+
+    print("clusters:", clusters)
+    print("edges =", edges)
+    # for e in edges:
+    #     print(e)

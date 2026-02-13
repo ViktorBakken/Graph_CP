@@ -6,7 +6,7 @@ include "globals.mzn";
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 int: n  = 20;        % number of nodes
-int: cl = 6;        % number of clusters
+int: cl = 3;        % number of clusters
 % int: m  = 10;       % number of undirected edges (0..n*(n-1)/2)
 
 
@@ -52,7 +52,7 @@ constraint forall(i,j in V)(
   f[i,j] <= (n-1) * bool2int(E[i,j])
 );
 
-int: root = 1;
+int: root = 11;
 
 constraint
   sum(j in V)(f[root,j]) - sum(j in V)(f[j,root]) = n - 1;
@@ -76,6 +76,7 @@ var int: intra_edges =
 
 % Pick one:
 % solve maximize intra_edges;
+constraint intra_edges = 3;
 solve satisfy;
 
 % --- Output ---
