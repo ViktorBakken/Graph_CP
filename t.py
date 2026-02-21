@@ -87,7 +87,7 @@ def clustered_bidirectional_weighted_graph(
 
 
 if __name__ == "__main__":
-    n = 9
+    n = 29
     c = 3
 
     edges, clusters = clustered_bidirectional_weighted_graph(
