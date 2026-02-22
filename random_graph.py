@@ -4,8 +4,8 @@ import networkx as nx
 
 def show(n,edges, sets=None):
     if sets== None:
-        sets=[{i for i in range(n)}, {},{}]
-    colorStates = {"S": "green", "I": "red", "R":"black"}
+        sets=[{i for i in range(n)}, {},{},{}]
+    colorStates = {"S": "green", "I": "red", "R":"black", "B":"yellow"}
 
     G = nx.Graph()
     for node in range(n): 
@@ -17,6 +17,9 @@ def show(n,edges, sets=None):
         G.nodes[i]["state"]="I"
     for r in sets[2]:
         G.nodes[r]["state"]="R"
+    for r in sets[3]:
+        G.nodes[r]["state"]="B"
+    
     
     G.add_edges_from(edges)
     layout = nx.spring_layout(G)
@@ -55,7 +58,3 @@ def generate_graph(n=10, displ=False,):
 #         show(n,edges)
 
 
-f=[0,1]
-# sample = {np.random.choice(tuple(f)) for _ in range(3)}
-
-print(f[1:])
