@@ -2,6 +2,7 @@ from random_graph import generate_graph,show
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from tabulate import tabulate
 np.random.seed(0)
 
 #Spread simulation
@@ -99,11 +100,12 @@ spread=0.25 # The chance an infection will spread through an edge
 budget=5 # The interdiction budget
 time_range=15 # The number of simulation steps
 mode="SI" # Infection model, SIR or SI 
-interdiction_type="node" # Naive interdiction model, node or edge
+interdiction_type="edge" # Naive interdiction model, node or edge
 display=True # Should the simulation display each step
-infected_nodes= {1,2,3,4,5,6} # Which nodes are infected at start
+infected_nodes= {1,2} # Which nodes are infected at start
 Run_single= False # Should the simulation run once or multiple time
 #------------------------------------------
+
 # --- Graph ----
 edges= {(23, 4), (6, 18), (21, 16), (16, 29), (18, 26), (22, 17), (5, 10), (12, 25), (0, 5), (19, 18), (9, 17), (5, 28), (18, 19), (28, 5), (17, 14), (4, 23), (24, 19), (25, 18), (10, 29), (27, 8), (22, 21), (11, 0), (14, 17), (23, 29), (1, 19), (26, 18), (20, 17), (14, 10), (17, 9), (9, 5), (9, 14), (24, 5), (26, 2), (10, 15), (8, 27), (1, 21), (25, 22), (7, 16), (2, 29), (5, 0), (5, 9), (22, 25), (13, 7), (2, 13), (24, 25), (0, 25), (25, 24), (16, 21), (20, 3), (29, 15), (23, 8), (20, 21), (21, 20), (12, 26), (4, 22), (11, 27), (5, 4), (21, 22), (12, 19), (8, 6), (13, 2), (0, 11), (16, 7), (19, 24), (29, 1), (2, 26), (6, 8), (20, 7), (22, 4), (29, 10), (15, 29), (14, 9), (29, 28), (18, 25), (19, 8), (10, 5), (17, 20), (10, 14), (25, 12), (28, 29), (15, 22), (19, 1), (17, 22), (16, 2), (8, 19), (19, 28), (21, 1), (29, 23), (7, 20), (19, 12), (22, 1), (29, 16), (7, 13), (4, 5), (25, 0), (5, 24), (8, 23), (2, 16), (15, 10), (18, 6), (1, 29), (22, 15), (27, 11), (3, 20), (28, 19), (29, 2), (26, 12), (1, 22)}
 if new_graph:
@@ -129,7 +131,7 @@ if not Run_single:
         row=[]
         for t in range(time_range):
             _, _, sets=cascade(t=t+1,n=n,spread=spread,budget=b,
-                      edges=edges,infected={1,2,3,4,5,6}, mode=mode,budget_type=interdiction_type,displ=False)
+                      edges=edges,infected={1,2}, mode=mode,budget_type=interdiction_type,displ=False)
             inf = len(sets[1])
             row.append(inf)
         data.append(row)
@@ -140,6 +142,16 @@ if not Run_single:
         index=[f"budget = {b}" for b in range(budget+1)],
         columns=range(1, time_range+1)
     )
+
+    print(tabulate(
+        df.to_numpy(),
+        headers=["max time step"] + [str(c) for c in df.columns],  # corner title + column headers
+        showindex=list(df.index),
+        tablefmt="fancy_grid",
+        numalign="right",
+        stralign="center"
+    ))    
+
     # Plot the runs
     for k in range(len(df)):
         fig, ax = plt.subplots(figsize=(10, 4))
