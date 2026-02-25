@@ -5,3 +5,5 @@ igraph
 matplotlib
 minizinc
 scipy
+seaborn
+tabulate

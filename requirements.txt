@@ -11,7 +11,9 @@ igraph==1.0.0
 kiwisolver==1.4.9
     # via matplotlib
 matplotlib==3.10.8
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   seaborn
 minizinc==0.10.0
     # via -r requirements.in
 networkx==3.6.1
@@ -23,10 +25,13 @@ numpy==2.4.1
     #   matplotlib
     #   pandas
     #   scipy
+    #   seaborn
 packaging==26.0
     # via matplotlib
 pandas==3.0.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   seaborn
 pillow==12.1.0
     # via matplotlib
 pyparsing==3.3.2
@@ -37,7 +42,11 @@ python-dateutil==2.9.0.post0
     #   pandas
 scipy==1.17.0
     # via -r requirements.in
+seaborn==0.13.2
+    # via -r requirements.in
 six==1.17.0
     # via python-dateutil
+tabulate==0.9.0
+    # via -r requirements.in
 texttable==1.7.0
     # via igraph

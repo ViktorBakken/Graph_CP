@@ -77,7 +77,7 @@ G.add_weighted_edges_from(new_edges)
 colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]
 
 # Layout
-layout = nx.spring_layout(G)
+layout = nx.spring_layout(G,seed=42)
 nx.draw(G, layout, node_color=colors,with_labels=True)
 edge_labels = nx.get_edge_attributes(G, "weight")
 nx.draw_networkx_edge_labels(G, layout, edge_labels=edge_labels)

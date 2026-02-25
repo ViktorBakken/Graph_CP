@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-def show(n,edges, sets=None):
+def show(n,edges, sets=None,layout=None):
     if sets== None:
         sets=[{i for i in range(n)}, {},{},{}]
     colorStates = {"S": "green", "I": "red", "R":"black", "B":"yellow"}
@@ -22,7 +22,8 @@ def show(n,edges, sets=None):
     
     
     G.add_edges_from(edges)
-    layout = nx.spring_layout(G)
+    if(layout==None):
+        layout = nx.spring_layout(G,seed=42)
     colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]
     nx.draw(G, layout, node_color=colors, with_labels=True)
     plt.show()
@@ -35,7 +36,7 @@ def generate_graph(n=10, displ=False,):
     edges =set()
     for i in range(n):
         for j in range(n):
-            noise=np.random.normal(scale=0.09)
+            noise=np.random.normal(scale=0.015)
             if i!=j and np.random.uniform(0,1) <= p+noise:
                 edges.add((i,j)); edges.add((j,i))
     if displ:
@@ -44,9 +45,9 @@ def generate_graph(n=10, displ=False,):
     return set(edges)
 
 if __name__=="__main__":
-    n=30
+    n=100
     print(1/n)
-    for _ in range(20):
+    for _ in range(50):
         edges=generate_graph(n,False)
         G = nx.Graph()
         G.add_nodes_from(range(n))
@@ -54,7 +55,7 @@ if __name__=="__main__":
         avg_degree = sum(d for _, d in G.degree()) / n
         print(avg_degree)
 
-        if (avg_degree>2.5):
+        if (avg_degree>2.5 and avg_degree<5):
             show(n,edges)
 
 
