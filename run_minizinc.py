@@ -8,7 +8,7 @@ import time
 
 def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_nodes=None,graph_edges=None, interdiction_type="edge",solver_name="highs", displ=False,layout=None):
     k=budget
-    if interdiction_type=="edge": k*=2
+    # if interdiction_type=="edge": k*=2
 
     n=num_nodes
     if infected_nodes==None:
@@ -71,9 +71,14 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
     print(time.time() - start_mzn)
     if displ:print(result)
 
-    node_removed = {z for z, m in zip(nodes, result["z"]) if m}
+    node_removed = {z for z, m in zip(nodes, result["z"]) if m} 
     edge_remaining = [x for x, m in zip(edges, result["x"]) if not m]
     edge_rem = [x for x, m in zip(edges, result["x"]) if m]
+
+    if interdiction_type=="edge":
+        for edge in edge_rem:
+            (i,j)=edge
+            edge_remaining.remove((j,i))
 
     # if displ:
     if interdiction_type=="edge":print("Selected edges to remove:",edge_rem,"\nMax removed?", len(edge_rem)==k,"\n")
@@ -88,7 +93,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
 
 if __name__=="__main__":
     displ=False
-    sovl=["gurobi", "cbc","highs","coinbc","coin-bc"]
+    sovl=["gurobi","cbc","highs","coinbc","coin-bc"]
     for solver in sovl:
         print(solver)
         start= time.time()
