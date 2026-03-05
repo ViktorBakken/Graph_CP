@@ -1,3 +1,8 @@
 
 __pycache__/random_graph.cpython-312.pyc
 data.csv
+__pycache__/run_minizinc.cpython-312.pyc
+*.pyc
+OLD_run_minizinc.py
+data
+shit.py

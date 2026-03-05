@@ -1,9 +1,9 @@
 % Input
 int: n; % number of nodes
-int: m; % number of undirectional edges
+int: m; % number of directional edges
 int: K; % budget
-set of int: V=1..n; % set of nodes
-set of int: E=1..m; % set of edges
+set of int: V=0..n-1; % set of nodes
+set of int: E=0..m-1; % set of edges
 
 array[E] of int: i; % the tail vector of edge
 array[E] of int: j; % the head vector of edges
@@ -39,18 +39,17 @@ constraint forall(e in E)(
 );
 
 
-
-
-%T^T*pi - beta <= c    
-%pi_i - pi_j - beta_ij <= c_ij
+% T^T*pi - beta <= c    
+% pi_i - pi_j - beta_ij <= c_ij
 constraint forall(e in E)(
   (pi[i[e]] - pi[j[e]] - beta[e] <= c[e]) /\
   (pi[j[e]] - pi[i[e]] - beta[e] <= c[e])
 );
 
-%beta_ij - M_ij*x_ij <= w_ij
+% beta_ij - M_ij*x_ij <= w_ij
 constraint forall(e in E)(beta[e] - M*x[e] <= w[e]);
 
+% Only infected nodes are removed
 constraint sum(s in S)(z[s])= sum(z);
 
 % Objective

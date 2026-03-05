@@ -7,3 +7,5 @@ minizinc
 scipy
 seaborn
 tabulate
+ortools
+gurobipy
