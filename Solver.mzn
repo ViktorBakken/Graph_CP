@@ -16,9 +16,9 @@ array[V] of int: b; % the vector of start node and ending node
 % Decsion Variables
 int: M = sum(c);  % upperbound of beta
 
-array[V] of var -M..M: pi; 
+array[V] of var int: pi; 
 array[E] of var 0..M: beta; 
-array[E] of var 0..M: w;
+array[E] of var 0..: w;
 array[E] of var 0..1: x; % interdiction vector
 array[0..0] of var 0..0:z; % Does Nothing 
 
@@ -45,6 +45,7 @@ constraint forall(e in 0..(m-1)div 2)(x[e*2]=x[e*2+1]);
 
 % Interdicted edges are connected to infected nodes
 constraint forall(e in E)(x[e]=1->(i[e] in S \/ j[e] in S));  
+
 % Objective
 var int: obj= sum(v in V)(b[v] * pi[v]) - sum(w);
 
