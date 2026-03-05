@@ -32,24 +32,23 @@ constraint sum(x) <= K;  % ensure interdiction stays within budget
 %T^T*pi - beta <= c    
 %pi_i - pi_j - beta_ij <= c_ij
 constraint forall(e in E)(
-  (pi[i[e]] - pi[j[e]] - beta[e] <= c[e]) /\
-  (pi[j[e]] - pi[i[e]] - beta[e] <= c[e])
-);
+  (pi[i[e]] - pi[j[e]] - beta[e] <= c[e])
+); % /\  (pi[j[e]] - pi[i[e]] - beta[e] <= c[e])
 
 
 %beta_ij - M_ij*x_ij <= w_ij
 constraint forall(e in E)(beta[e] - M*x[e] <= w[e]);
 
 % Ensure that interdicted edges are removing both direction
-constraint forall(e in 0..(m-1)div 2)(x[e*2]=x[e*2+1]);
+% constraint forall(e in 0..(m-1)div 2)(x[e*2]=x[e*2+1]);
 
 % Interdicted edges are connected to infected nodes
-constraint forall(e in E)(x[e]=1->(i[e] in S \/ j[e] in S));  
+constraint forall(e in E)(x[e]=1->i[e] in S);  %\/ j[e] in S
 
 % Objective
 var int: obj= sum(v in V)(b[v] * pi[v]) - sum(w);
 
-solve :: int_search(x, first_fail, indomain_max, complete) maximize obj;
+solve maximize obj;
 output [
   "obj=", show(obj),"\n",
   "pi=", show(pi), "\n",
