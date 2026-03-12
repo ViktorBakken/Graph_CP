@@ -1,6 +1,5 @@
 from random_graph import generate_graph,show, determine_T
 from Simulation import cascade
-from run_minizinc import interdiction_minizinc
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,17 +16,16 @@ new_graph=False # Should the simulation generate a random graph of n nodes
 n=100  # Number of nodes in graph
 spread=0.2 # The chance an infection will spread through an edge
 budget=23 # The interdiction budget
-intervention_step=[5] # The steps in the simulation where interdiction occur
-time_range=30 # The number of simulation steps
-repr=15
+intervention_step={5} # The steps in the simulation where interdiction occur
+time_range=60 # The number of simulation steps
+repr=30
 mode="SI" # Infection model, SIR or SI 
-interdiction_type="edge" # Naive interdiction model, node or edge or edge mzn
+solver="gurobi"
+interdiction_type="semi edge" # Naive interdiction model, node or edge or edge mzn or semi edge
 display=False # Should the simulation display each step
 infected_nodes= {6} # Which nodes are infected at start
-Run_single=False # Should the simulation run once or multiple time
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-# --- Graph --------------------------------------------------------------------------------------------------------------------------------------------------
+Run_single=False
+#--------------------------------------------------------------------------------------------------------------------------------------------------
 # 15
 # edges= [(12, 7), (7, 12),(5, 4), (4, 5),(4, 6), (6, 4),(8, 0), (0, 8),(9, 5), (5, 9),(11, 2), (2, 11),(11, 5), (5, 11),(9, 14), (14, 9),(13, 11), (11, 13),(7, 10), (10, 7),(6, 14), (14, 6),(4, 2), (2, 4),(3, 0), (0, 3),(9, 7), (7, 9),(5, 12), (12, 5),(11, 1), (1, 11),(11, 7), (7, 11),(1, 2), (2, 1),(0, 13), (13, 0),(13, 10), (10, 13),(8, 7), (7, 8),(9, 6), (6, 9)]
 # 30
@@ -45,9 +43,11 @@ for edge in edges:
 
 #--- Run Simulation -------------------------------------------------------------------------------------------------------------------------------------------
 if Run_single:
-    t, new_edges, sets,_=cascade(t=time_range,n=n,spread=spread,budget=budget,graph_edges=edges,init_infected=infected_nodes,
-                        mode=mode,budget_type=interdiction_type,intervention_step=intervention_step,displ=display)
-
+    T={}
+    if interdiction_type=="edge mzn":
+        T=determine_T(edges,[{n for n in range(n)},infected_nodes,{},{}])
+    t, new_edges, sets,_=cascade(solver=solver,t=time_range,n=n,spread=spread,budget=budget,graph_edges=edges,init_infected=infected_nodes,
+                        mode=mode,budget_type=interdiction_type,intervention_step=intervention_step,displ=display,T=T,layout=None)
     #--- Stats ------------------------------------
     show(n,new_edges,sets) #Display graph after simulation
 
@@ -61,12 +61,10 @@ if Run_single:
 if not Run_single:
     data_average=[]
     time_run=[]
-    head_start=intervention_step[0]
 
-    updated_intervention_steps=[0]
-    if len(intervention_step)>1:
-        updated_intervention_steps=[i-head_start for i in intervention_step]
-    
+
+    head_start=min(intervention_step)
+    updated_intervention_steps={i-head_start for i in intervention_step}
     
     layout=None
     if display:layout=show(n,edges,[{n for n in range(n)}, {i for i in infected_nodes}, {},{}])
@@ -81,7 +79,7 @@ if not Run_single:
     start=head_start_infected
 
    #Determine T
-    T=[]
+    T={}
     if interdiction_type=="edge mzn":
         T=determine_T(edges,sets)
         sets[3]=T
@@ -94,19 +92,14 @@ if not Run_single:
     print(count)
 
     #Run second time
-    if display:show(n,edges,sets,layout)
+    # if display:show(n,edges,sets,layout)
     for b in range(budget+1):
         print("\nBUDGET:", b)
         data=[]
-    
-        # if interdiction_type == "edge mzn":
-        #    print(len(edges))
-        #    edges_new,_= interdiction_minizinc(num_nodes=n,budget=b,infected_nodes=head_start_infected,critical_nodes=T,interdiction_type="edge",solver_name="highs",displ=False)
-        #    print(len(edges_new))
         t=time.time()
         for _ in range(repr):
-            _, _, _,infected_over_time=cascade(t=time_range-head_start,n=n,spread=spread,budget=b,graph_edges=edges,init_infected=new_infected_nodes, 
-                                           mode=mode,budget_type=interdiction_type,intervention_step=updated_intervention_steps,displ=False,T=T)
+            _, _, _,infected_over_time=cascade(solver=solver,t=time_range-head_start,n=n,spread=spread,budget=b,graph_edges=edges,init_infected=new_infected_nodes, 
+                                           mode=mode,budget_type=interdiction_type,intervention_step=updated_intervention_steps,displ=display,T=T,layout=layout)
             data.append(infected_over_time)
         time_run.append((time.time()-t)/repr)
         #Determine the average of the runs and store the 
@@ -131,7 +124,7 @@ if not Run_single:
         annot=True,
         fmt=".0f",
         vmin=0,vmax=n,
-        linewidths=0.514
+        linewidths=0.514,
     )
 
     plt.xlabel("Time step")
@@ -140,9 +133,9 @@ if not Run_single:
     plt.show()  
 
     #--- Plot graph ------------------------------------
-    plt.figure()
-    plt.plot(time_run,label="time s")
-    plt.show()
+    # plt.figure()
+    # plt.plot(time_run,label="time s")
+    # plt.show()
 
         # for k in range(len(df)):
         #     fig, ax = plt.subplots(figsize=(10, 4))

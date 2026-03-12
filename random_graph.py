@@ -10,7 +10,7 @@ def show(n,edges, sets=None,layout=None):
     G = nx.Graph()
     for node in range(n): 
         G.add_node(node)
-    
+
     for s in sets[0]:
         G.nodes[s]["state"]="S" 
     for i in sets[1]:
@@ -20,8 +20,22 @@ def show(n,edges, sets=None,layout=None):
     for r in sets[3]:
         G.nodes[r]["state"]="B"
     
-    
     G.add_edges_from(edges)
+    # centrality = nx.betweenness_centrality(G)
+    # ccs= nx.number_connected_components(G)
+    # # ccs_2=nx.node_connected_component(G)
+
+    # efficentcy=nx.local_efficiency(G)
+    # print("efficency=", efficentcy)
+    # eff=[centrality[s] for s in set.union(sets[0],sets[3])]
+    # print("average efficency:",np.mean(eff))
+    # for s in sets[0]:
+    #     print("node:", s, " ", centrality[s])
+
+    # print("average connectivity:",nx.average_node_connectivity(G))
+    # print("css_2=",ccs_2)
+    
+
     if(layout==None):
         layout = nx.spring_layout(G,seed=42)
     colors = [colorStates[G.nodes[n]["state"]] for n in G.nodes()]
@@ -66,17 +80,24 @@ def determine_T(edges, sets):
     filtered_edges=filter_edges(normal,edges)
     G=nx.Graph(filtered_edges)
     # Leaders (max degree nodes)
-    # out=nx.degree_centrality(G)
-    # max=np.max([degree for (node,degree) in out if node not in infected])
-    # out=nx.degree(G,G.nodes)
-    # max=np.max([degree for (node,degree) in out if node not in infected])
-    # leading_nodes={node for (node,degree) in out if degree== max and node not in infected}
-    leading_nodes=set(nx.voterank(G,1))
+    leading_nodes=set(nx.voterank(G,5))
+    # print(leading_nodes)
     # Bridging nodes
-    bridging_nodes = set(nx.articulation_points(G))-infected
-
-    T=leading_nodes.union(bridging_nodes)
+    bridging_nodes=list(nx.articulation_points(G))
+    np.random.shuffle(bridging_nodes)
+    bridging_nodes=bridging_nodes[:5]
+    T=leading_nodes.union(set(bridging_nodes))
+    # t=nx.biconnected_components(nx.Graph(edges))
+    # print(sorted(map(sorted,t)))
+    print("T=",T)
     return T
+
+def determine_k_dangerous_edges(edges, risk_edges,budget):
+    G=nx.Graph(edges)
+    betweenness = nx.edge_betweenness_centrality(G)
+    high_risk_edges=sorted(risk_edges,key=lambda e:betweenness.get(e,0),reverse=True)
+    return set(high_risk_edges[:budget])
+
 
 if __name__=="__main__":
     n=100

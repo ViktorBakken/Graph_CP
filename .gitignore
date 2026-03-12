@@ -6,3 +6,6 @@ __pycache__/run_minizinc.cpython-312.pyc
 OLD_run_minizinc.py
 data
 shit.py
+tsp.mzn
+n100w140.001.dzn
+Determine critical nodes.mzn
