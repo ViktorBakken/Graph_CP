@@ -15,9 +15,9 @@ set of int: T={t | t in index_set(b) where b[t]=-1};
 % Decsion Variables
 int: M = sum(c);  % upperbound of beta
 
-array[V] of var int: pi; 
+array[V] of var -2*M..M: pi; 
 array[E] of var 0..M: beta; 
-array[E] of var 0..: w;
+array[E] of var 0..M: w;
 array[E] of var 0..1: x; % interdiction vector
 array[0..0] of var 0..0:z; % Does Nothing 
 
@@ -46,7 +46,8 @@ solve maximize obj;
 output [
   "obj=", show(obj),"\n",
   "pi=", show(pi), "\n",
+  "w=", show(w), "\n",
   "beta=", show(beta), "\n",
-  "x=", show(x), "\n",
+  % "x=", show(x), "\n",
   "M=", show(M), "\n"
   ]

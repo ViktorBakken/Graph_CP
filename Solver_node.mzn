@@ -62,5 +62,5 @@ output [
   "pi=", show(pi), "\n",
   "beta=", show(beta), "\n",
   "z=", show(z), "\n",
-  "s=", show(S), ", t=", show(T),"\n"
+  % "s=", show(S), ", t=", show(T),"\n"
 ]

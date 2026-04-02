@@ -1,4 +1,4 @@
-from random_graph import show,determine_k_dangerous_edges
+from random_graph import show,determine_k_dangerous_edges,analys_GF,analys_Gh, determine_T
 from run_minizinc import interdiction_minizinc
 import numpy as np
 import time
@@ -6,13 +6,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def cascade(t=2, n=100,spread=0.2,budget=2,graph_edges=None, init_infected=None, mode="SI",budget_type="edge",intervention_step=None,displ=False,T=set(), layout=None,solver="cbc"):
+def cascade(t=4, n=100,spread=0.2,budget=8,graph_edges=None, init_infected=None, mode="SI",budget_type="edge",intervention_step=None,displ=0,T=set(), layout=None,solver="cbc"):
     # Initialization
     if graph_edges is None:
         edges= [(23, 4), (4, 23), (67, 4), (4, 67), (69, 1), (1, 69), (15, 30), (30, 15), (80, 65), (65, 80), (73, 26), (26, 73), (8, 0), (0, 8), (61, 70), (70, 61), (71, 38), (38, 71), (63, 34), (34, 63), (96, 67), (67, 96), (73, 35), (35, 73), (92, 79), (79, 92), (85, 73), (73, 85), (21, 37), (37, 21), (28, 30), (30, 28), (46, 66), (66, 46), (86, 47), (47, 86), (67, 98), (98, 67), (85, 27), (27, 85), (17, 94), (94, 17), (55, 50), (50, 55), (6, 11), (11, 6), (69, 49), (49, 69), (6, 75), (75, 6), (99, 93), (93, 99), (2, 32), (32, 2), (11, 44), (44, 11), (47, 18), (18, 47), (91, 18), (18, 91), (8, 11), (11, 8), (23, 27), (27, 23), (6, 41), (41, 6), (52, 8), (8, 52), (30, 75), (75, 30), (82, 58), (58, 82), (66, 7), (7, 66), (67, 27), (27, 67), (74, 84), (84, 74), (11, 80), (80, 11), (38, 64), (64, 38), (80, 88), (88, 80), (64, 0), (0, 64), (81, 16), (16, 81), (39, 10), (10, 39), (0, 46), (46, 0), (55, 79), (79, 55), (15, 46), (46, 15), (37, 28), (28, 37), (5, 23), (23, 5), (84, 45), (45, 84), (48, 58), (58, 48), (61, 22), (22, 61), (35, 67), (67, 35), (77, 48), (48, 77), (61, 31), (31, 61), (24, 21), (21, 24), (70, 43), (43, 70), (71, 72), (72, 71), (35, 85), (85, 35), (76, 31), (31, 76), (13, 94), (94, 13), (83, 0), (0, 83), (63, 31), (31, 63), (60, 16), (16, 60), (11, 66), (66, 11), (98, 9), (9, 98), (15, 66), (66, 15), (32, 27), (27, 32), (25, 22), (22, 25), (19, 36), (36, 19), (76, 88), (88, 76), (87, 70), (70, 87), (18, 80), (80, 18), (0, 96), (96, 0), (83, 48), (48, 83), (76, 97), (97, 76), (84, 86), (86, 84), (46, 47), (47, 46), (3, 21), (21, 3), (14, 21), (21, 14), (68, 1), (1, 68), (23, 33), (33, 23), (83, 84), (84, 83), (66, 77), (77, 66), (43, 20), (20, 43), (34, 48), (48, 34), (81, 77), (77, 81), (53, 6), (6, 53), (85, 93), (93, 85), (22, 0), (0, 22), (91, 54), (54, 91), (22, 73), (73, 22), (39, 89), (89, 39), (15, 34), (34, 15), (93, 69), (69, 93), (84, 97), (97, 84), (5, 84), (84, 5), (69, 87), (87, 69), (44, 12), (12, 44), (40, 81), (81, 40), (18, 50), (50, 18), (27, 28), (28, 27), (7, 59), (59, 7), (10, 85), (85, 10), (48, 69), (69, 48), (94, 36), (36, 94), (72, 90), (90, 72), (94, 72), (72, 94), (95, 92), (92, 95), (19, 72), (72, 19), (67, 39), (39, 67), (91, 88), (88, 91), (19, 81), (81, 19), (29, 3), (3, 29), (31, 18), (18, 31), (40, 94), (94, 40), (44, 64), (64, 44), (65, 62), (62, 65), (25, 78), (78, 25), (57, 76), (76, 57), (74, 83), (83, 74), (46, 85), (85, 46), (98, 31), (31, 98), (0, 42), (42, 0), (49, 90), (90, 49), (87, 74), (74, 87), (36, 37), (37, 36), (92, 91), (91, 92), (90, 56), (56, 90), (71, 70), (70, 71), (24, 77), (77, 24), (51, 6), (6, 51), (59, 51), (51, 59), (29, 4), (4, 29)]
-    
     else:
         edges=graph_edges.copy()
+        
     if init_infected is None:
         infected = {0, 66, 34, 7, 8, 11, 46, 15, 80, 47, 52, 85}
     else:
@@ -23,22 +23,40 @@ def cascade(t=2, n=100,spread=0.2,budget=2,graph_edges=None, init_infected=None,
     else:
         intervention_step=set(intervention_step)
 
+    if T==set(): 
+        #15
+        # T={0,1}
+        #100
+        T={69, 6, 48,21, 18,88, 22, 23, 25, 27, 30, 73, 76, 77, 81, 84, 90, 91, 92, 93, 94, 98}
+        # T=set()
+        # T=determine_T(edges,[])
+    else:
+        T=T.copy()
+
     suceptible={i for i in range(n)}
     for inf in infected:
         suceptible.remove(inf)
 
     safe=set()
     removed=set()
-    infected_over_time=[]
     risk_edges=set()    
 
+
+    infected_over_time=[]
+    DATA=[]
+    sets=[{},{},{},{}]
     #-------------------------------
     #---Spread model----------------
     #-------------------------------
     for time in range(t):
+        sets=[suceptible,infected,safe,removed]
         infected_over_time.append(len(infected))
+        # if budget_type=="edge mzn":
+        if displ>=1:DATA.append([*analys_Gh(edges,sets),*analys_GF(edges,sets)])
+
+
         if len(risk_edges)>0 or time==0:
-            # if displ:show(n=n,edges=edges,sets=[suceptible,infected,safe,removed],layout=layout)           
+            if displ>=3:show(n=n,edges=edges,sets=sets,layout=layout)           
 
             # Interdiction mode: node
             if time in intervention_step and budget>0:
@@ -55,15 +73,13 @@ def cascade(t=2, n=100,spread=0.2,budget=2,graph_edges=None, init_infected=None,
                         for node in rem_nodes:
                             removed.add(node)
                     case "edge mzn":
+                        if len(intervention_step)>1:
+                            T=determine_T(edges,sets)
                         T=set(T)-infected
-                        if displ:layout=show(n,edges,[suceptible,infected,safe,T],layout)
-
-                        edges,_=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=budget,infected_nodes=infected,critical_nodes=T, graph_edges=edges,interdiction_type="edge", displ=False)    
-                        if displ:layout=show(n,edges,[suceptible,infected,safe,T],layout)
-                  
+                        edges,_=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=budget,infected_nodes=infected,critical_nodes=T, graph_edges=edges,interdiction_type="edge", displ=displ)    
                     case "node mzn":
                         T=T-infected
-                        _,rem_nodes=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=budget,infected_nodes=infected,critical_nodes=T, graph_edges=edges,interdiction_type="node", displ=displ)                      
+                        edges,rem_nodes=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=budget,infected_nodes=infected,critical_nodes=T, graph_edges=edges,interdiction_type="node", displ=displ)                      
                         for node in rem_nodes:
                             removed.add(node)
             # Determine which edges are adjacent to infected nodes
@@ -91,7 +107,7 @@ def cascade(t=2, n=100,spread=0.2,budget=2,graph_edges=None, init_infected=None,
                             edges.remove((j,i))
                     case "semi edge":
                         if(len(risk_edges)>budget):
-                            rem_edges= determine_k_dangerous_edges(edges,risk_edges,budget)
+                            rem_edges= determine_k_dangerous_edges(edges,risk_edges,sets,budget)
                             risk_edges-=rem_edges
                         else:
                             rem_edges=risk_edges.copy()
@@ -123,8 +139,7 @@ def cascade(t=2, n=100,spread=0.2,budget=2,graph_edges=None, init_infected=None,
                             infected.add(j)                   
                             suceptible.discard(j)
             
-    return t, edges, [suceptible,infected,safe,removed], infected_over_time
-
+    return edges, sets, infected_over_time, DATA
 
 def fix_edge(edges):
     fixed_edges=[]
@@ -139,28 +154,65 @@ def fix_edge(edges):
     return fixed_edges
 
 if __name__=="__main__":
-    # displ=False
+    # np.random.seed(42)
+    # intervention_step={1,2}
+    # displ=0
     # sovl=["gurobi","highs","coinbc","coin-bc"]
     # for solve in sovl:
     #     print(solve)
     #     start= time.time()
-    #     cascade(solver =solve,displ=displ,budget_type="edge mzn")
+    #     cascade(solver =solve,displ=displ,budget_type="edge mzn",intervention_step=intervention_step)
     #     print(solve," run time: ",time.time() - start,"s\n")
+# --------------------------------------------------------
+    from matplotlib.ticker import MaxNLocator
+    spread=0.2
+    infected_nodes={11}
+    interdiction_type="edge mzn"
+    Reccomended=[np.float64(6), np.float64(7.8), np.float64(8.4), np.float64(8.8), np.float64(9.1), np.float64(8.9), np.float64(8.1), np.float64(7.7), np.float64(7.2), np.float64(6.4)]
+    start_inf=[np.float64(3.0), np.float64(3.2 ), np.float64(5.6), np.float64(6.0), np.float64(12.2), np.float64(17.0), np.float64(17.7), np.float64(18.4), np.float64(21.6), np.float64(32.0)]
 
-    df=pd.read_csv("data",index_col=0)
-    plt.figure(figsize=(15, 10))
-    sns.heatmap(
-            df,
-            cmap="magma",
-            annot=True,
-            fmt=".0f",
-            vmin=0,vmax=100,
-            linewidths=0.514,
-        )
-    plt.xlabel("Time step")
-    plt.ylabel("Budget")
-    plt.title(f"Infected nodes with spread {0.2} after varying {"edge mzn"} interdiction budgets at {4}")
-    plt.show()  
+    steps = range(len(Reccomended))
+
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(9, 6), dpi=150, sharex=True
+    )
+
+    ax1.plot(steps, Reccomended, marker="o", linewidth=2)
+    ax1.set_ylabel("Recommended budget")
+    ax1.set_title(
+        f"Interdiction analysis (spread={spread}, initial infected={infected_nodes}, type={interdiction_type})"
+    )
+    ax1.grid(True, alpha=0.3)
+
+    ax2.plot(steps, start_inf, marker="s", linestyle="--", linewidth=2)
+    ax2.set_xlabel("Interdiction step")
+    ax2.set_ylabel("Percent infected (%)")
+    ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+# # ----------------------------------------------------------------------------
+#     df=pd.read_csv("data",index_col=0)
+#     plt.figure(figsize=(15, 10))
+#     sns.heatmap(
+#             df,
+#             cmap="magma",
+#             annot=False,
+#             fmt=".0f",
+#             vmin=0,vmax=100,
+#             linewidths=0.514,
+#         )
+#     plt.xlabel("Time step")
+#     plt.ylabel("Budget")
+#     plt.title(f"Infected nodes with spread {0.2} after varying {"edge mzn"} interdiction budgets at {4}")
+#     plt.show()  
 
     # t, edges, sets, infected_over_time =cascade(budget_type="edge mzn", displ=True)
 #--- Stats ------------------------------------
