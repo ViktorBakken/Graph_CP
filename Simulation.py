@@ -58,7 +58,7 @@ def cascade(t=4, n=100,spread=0.2,budget=8,graph_edges=None, init_infected=None,
         sets=[suceptible,infected,safe,removed]
         infected_over_time.append(len(infected))
         # if budget_type=="edge mzn":
-        if displ>=1:DATA.append([*analys_Gh(edges,sets),*analys_GF(edges,sets)])
+        # if displ>=1:DATA.append([*analys_Gh(edges,sets),*analys_GF(edges,sets)])
 
 
         if len(risk_edges)>0 or time==0:
@@ -212,6 +212,7 @@ if __name__=="__main__":
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
+    ax1.legend()
     plt.show()
 
 
