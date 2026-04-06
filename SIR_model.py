@@ -17,12 +17,12 @@ n=100  # Number of nodes in graph
 spread=0.2 # The chance an infection will spread through an edge
 budget=50 # The interdiction budget
 intervention_step={4} # The steps in the simulation where interdiction occur
-early_stop=(True,10)
-time_range=70 # The number of simulation steps
-repr= 20
+early_stop=(True,20)
+time_range=46 # The number of simulation steps
+repr= 30
 mode="SI" # Infection model, SIR or SI 
 solver="gurobi"
-interdiction_type="edge mzn" # Naive interdiction model, node or edge or edge mzn or semi edge
+interdiction_type="semi edge" # Naive interdiction model, node or edge or edge mzn or semi edge
 verbose=0 # Should the simulation display each step
 infected_nodes= {11} # Which nodes are infected at start
 Run_single=False
@@ -85,6 +85,8 @@ if not Run_single:
 
     score=[]
     score_std=[]
+    
+    avg_heat=[]
 
     for run in range(runs):
         print("run ", run+1)
@@ -94,13 +96,14 @@ if not Run_single:
     
         d=[]
         d_2=[]
+        d_3=[]
         s=[]
         repeat = repr if Double_trouble or new_start else 1
         for rep in range(repeat):
-            print("rep ", rep+1)
+            #print("rep ", rep+1)
 
             # if Double_trouble: 
-            if new_start: infected_nodes={int(np.random.randint(0,n))}
+            if new_start or Double_trouble: infected_nodes={int(np.random.randint(0,n))}
             print(infected_nodes)
             data_average=[]
             Num_infected=[]
@@ -199,7 +202,8 @@ if not Run_single:
             # plt.savefig(f"new_test_data/{b}")  
                 plt.show()
             #--- Stats ------------------------------------
-            if not Double_trouble:
+            d_3.append(data_average)
+            if not Double_trouble or new_start:
                 df = pd.DataFrame(
                     data_average,
                     index=[f"budget = {b}" for b in range(budget+1)],
@@ -290,6 +294,7 @@ if not Run_single:
         # Reccomended.append(np.mean(d,axis=0))
         score.append(np.mean(d,axis=0))
         score_std.append(np.std(d,axis=0))
+        avg_heat.append(np.mean(d_3,axis=0))
 
         bst_score.append(np.mean(s,axis=0))
         bst_score_std.append(np.std(s,axis=0))
@@ -329,7 +334,45 @@ if not Run_single:
         # plt.ylabel("effectiveness")
         plt.title(f"Comparison of marginal gain, with {spread} spread after varying {interdiction_type} interdiction  budgets at {int(start_inf[0])}% infected")
         plt.show()
-
+        
+        df = pd.DataFrame(
+                    np.mean(avg_heat, axis=0),
+                    index=[f"budget = {b}" for b in range(budget+1)],
+                    columns=range(0, time_range)
+                )
+        df.to_csv("data")
+        
+        plt.figure(figsize=(10, 5))
+        sns.heatmap(
+            df,
+            cmap="magma",
+            annot=True,
+            fmt=".0f",
+            vmin=0,vmax=n,
+            linewidths=0.514,
+        )
+        plt.xlabel("Time step")
+        plt.ylabel("Budget")
+        plt.title(f"Infected nodes with spread {spread} after varying {interdiction_type} interdiction budgets at {intervention_step}")
+        plt.show()  
+        
+        import pickle
+        results = {
+        "scores":     np.array(score),
+        "score_std":  np.array(score_std),
+        "bst_score":  bst_score,
+        "start_inf":  start_inf,
+        "timeseries": data_average,
+        "params": {
+            "n": n, "spread": spread, "budget": budget,
+            "mode": mode, "interdiction_type": interdiction_type,
+            "intervention_step": list(intervention_step),
+        }
+        }
+        with open("results.pkl", "wb") as f:
+            pickle.dump(results, f)
+        
+        
     if Double_trouble:
         from matplotlib.ticker import MaxNLocator
         print(bst_score)
