@@ -108,8 +108,8 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
 
 
 if __name__=="__main__":
-    displ=2
-    sovl=["gurobi","cbc","highs","coinbc","coin-bc"]
+    displ=0
+    sovl=["cbc","highs","coinbc","coin-bc"]
     for solver in sovl:
         print(solver)
         start= time.time()

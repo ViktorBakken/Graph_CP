@@ -15,18 +15,18 @@ import time
 new_graph=False # Should the simulation generate a random graph of n nodes
 n=100  # Number of nodes in graph
 spread=0.2 # The chance an infection will spread through an edge
-budget=70 # The interdiction budget
+budget=27 # The interdiction budget
 intervention_step={5} # The steps in the simulation where interdiction occur
 early_stop=(True,10)
 time_range=70 # The number of simulation steps
-repr= 30
+repr= 10
 mode="SI" # Infection model, SIR or SI 
-solver="gurobi"
-interdiction_type="edge" # Naive interdiction model, node or edge or edge mzn or semi edge
+solver="coin-bc"
+interdiction_type="semi edge" # Naive interdiction model, node or edge or edge mzn or semi edge
 verbose=0 # Should the simulation display each step
 infected_nodes= {11} # Which nodes are infected at start
 Run_single=False
-Double_trouble=True
+Double_trouble=False
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 # 15
 # edges= [(12, 7), (7, 12),(5, 4), (4, 5),(4, 6), (6, 4),(8, 0), (0, 8),(9, 5), (5, 9),(11, 2), (2, 11),(11, 5), (5, 11),(9, 14), (14, 9),(13, 11), (11, 13),(7, 10), (10, 7),(6, 14), (14, 6),(4, 2), (2, 4),(3, 0), (0, 3),(9, 7), (7, 9),(5, 12), (12, 5),(11, 1), (1, 11),(11, 7), (7, 11),(1, 2), (2, 1),(0, 13), (13, 0),(13, 10), (10, 13),(8, 7), (7, 8),(9, 6), (6, 9)]
@@ -207,11 +207,13 @@ if not Run_single:
                 plt.show()
 
             if Num_infected[0] !=0:
-                # Effectiveness 
-                test=[0]
-                for inf, b in zip(Num_infected,range(budget)):
-                    if(b>0):
-                        test.append(1-(inf/Num_infected[0]))
+                # Score 
+                test = []
+                for b, inf in enumerate(Num_infected):
+                    if Num_infected[0] > 0:
+                        test.append(1 - inf / Num_infected[0])
+                    else:
+                        test.append(0)
                 
                 if not Double_trouble:
                     plt.plot(test)
@@ -222,18 +224,20 @@ if not Run_single:
 
 
                 # Effectiveness 
-                best=[0]
-                for b in range(budget):
+                delta=[0]
+                for b in range(1,budget+1):
                     if(b>0):
-                        best.append(test[b-1]-test[b])
+                        delta.append(test[b]-test[b-1])
                 
-                b= best.index(min(best))
-                print("best:",b)
-                # d.append(b)
-                s.append(test[b])
+                # tau=0.01
+                # b_star= next((b for b in range(1,len(delta)) if delta[b]<tau), len(delta)-1)
+                b_star=delta.index(max(delta))
+                print("b*:",b_star)
+                # # d.append(b)
+                s.append(test[b_star])
 
                 if not Double_trouble:
-                    plt.plot(best)
+                    plt.plot(delta)
                     plt.xlabel("Budget")
                     # plt.ylabel("effectiveness")
                     plt.title(f"Comparison of delta R, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
@@ -243,19 +247,19 @@ if not Run_single:
 
 
 
-                # # Area under number of infected over time
-                # budgetComparison=[0]
-                # for inf, b in zip(Num_infected,range(budget)):
-                #     if(b>0):
-                #         budgetComparison.append((Num_infected[0]-inf)/b)
+                # Area under number of infected over time
+                budgetComparison=[0]
+                for inf, b in zip(Num_infected,range(budget)):
+                    if(b>0):
+                        budgetComparison.append((Num_infected[0]-inf)/b)
                 
-                # if not Double_trouble:
-                #     plt.plot(budgetComparison)
-                #     plt.xlabel("Budget")
-                #     plt.ylabel("Improvement given budget")
-                #     plt.title(f"Comparison of number of infected given baseline and budget, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
-                #     plt.show()  
-                # d.append(budgetComparison.index(max(budgetComparison)))
+                if not Double_trouble:
+                    plt.plot(budgetComparison)
+                    plt.xlabel("Budget")
+                    plt.ylabel("Improvement given budget")
+                    plt.title(f"Comparison of number of infected given baseline and budget, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
+                    plt.show()  
+                d.append(budgetComparison.index(max(budgetComparison)))
 
 
 
@@ -265,7 +269,7 @@ if not Run_single:
                 sns.heatmap(
                     df,
                     cmap="magma",
-                    annot=False,
+                    annot=True,
                     fmt=".0f",
                     vmin=0,vmax=n,
                     linewidths=0.514,
