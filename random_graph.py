@@ -124,7 +124,7 @@ def determine_k_dangerous_edges(edges, risk_edges,sets,budget):
         centrality = {}
         for component in nx.connected_components(G):
             H = G.subgraph(component)
-            c = nx.eigenvector_centrality(H, max_iter=1000)
+            c = nx.eigenvector_centrality(H, max_iter=5000)
             centrality.update(c)
         high_risk_edges=sorted(risk_edges,key=lambda e: centrality.get(e[1],0),reverse=True)
     return set(high_risk_edges[:budget])
