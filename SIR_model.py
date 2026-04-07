@@ -17,7 +17,7 @@ n=100  # Number of nodes in graph
 spread=0.2 # The chance an infection will spread through an edge
 budget=50 # The interdiction budget
 intervention_step={4} # The steps in the simulation where interdiction occur
-early_stop=(True,20)
+early_stop=(True,10)
 time_range=46 # The number of simulation steps
 repr= 30
 mode="SI" # Infection model, SIR or SI 
@@ -26,8 +26,8 @@ interdiction_type="semi edge" # Naive interdiction model, node or edge or edge m
 verbose=0 # Should the simulation display each step
 infected_nodes= {11} # Which nodes are infected at start
 Run_single=False
-Double_trouble=False
-new_start=True
+new_start=False
+Double_trouble=True
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 # 15
 # edges= [(12, 7), (7, 12),(5, 4), (4, 5),(4, 6), (6, 4),(8, 0), (0, 8),(9, 5), (5, 9),(11, 2), (2, 11),(11, 5), (5, 11),(9, 14), (14, 9),(13, 11), (11, 13),(7, 10), (10, 7),(6, 14), (14, 6),(4, 2), (2, 4),(3, 0), (0, 3),(9, 7), (7, 9),(5, 12), (12, 5),(11, 1), (1, 11),(11, 7), (7, 11),(1, 2), (2, 1),(0, 13), (13, 0),(13, 10), (10, 13),(8, 7), (7, 8),(9, 6), (6, 9)]
@@ -152,7 +152,7 @@ if not Run_single:
             #Run second time
             if verbose>=2:show(n,edges,sets,layout)
             # Data_avg=[]
-            for b in range(budget+1):
+            for b in range(count+1):
                 # print("\nBUDGET:", b)
                 data=[]
                 inf=0
@@ -172,8 +172,7 @@ if not Run_single:
                 #Determine the average of the runs and store the 
                 means_over_run=np.mean(data,axis=0)
                 combined_start_mean_data=[*start,*means_over_run]
-                data_average.append(combined_start_mean_data)
-
+                data_average.append(combined_start_mean_data)              
                 # Experimental data
                 if verbose>=1: #=="edge mzn" :
                     rows = list(Data_init) + list(Data_avg)
@@ -196,6 +195,15 @@ if not Run_single:
                 if verbose>=1:plt.savefig(f"new_test_data/{b}")  
                 # # plt.clf()
                 # # plt.show() 
+                
+            # Pad remaining budgets with the last result (fully quarantined, no change)
+            last = data_average[-1]
+            data_average.extend([last] * (budget - count))  # fills up to budget+1 rows
+                
+                
+            last_inf = Num_infected[-1]
+            Num_infected.extend([last_inf] * (budget - count))   
+                
             # plt.plot(data_average,ls="--",label="Infected")
             if verbose>=1:
                 plt.legend()
@@ -229,10 +237,12 @@ if not Run_single:
                         test.append(0)
                 d.append(test)
                 if not Double_trouble and not new_start:
-                    plt.plot(test)
+                    plt.plot(test, marker="o", linewidth=2)
                     plt.xlabel("Budget")
-                    plt.ylabel("effectiveness")
-                    plt.title(f"Comparison of Effectiveness, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
+                    plt.ylabel("Reduction of infection")
+                    plt.title(f"Reduction of infection, with {count} infected edges, varying "
+                            f"{interdiction_type} interdiction budgets at {early_stop[1]}% infected")                    
+                    plt.grid(True, alpha=0.3)
                     plt.show()  
 
 
@@ -250,29 +260,29 @@ if not Run_single:
                 s.append(test[b_star])
 
                 if not Double_trouble and not new_start:
-                    plt.plot(delta)
-                    plt.xlabel("Budget")
-                    # plt.ylabel("effectiveness")
-                    plt.title(f"Comparison of delta R, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
+                    plt.plot(delta, marker="o", linewidth=2)
+                    plt.grid(True, alpha=0.3)
+
+                    plt.title(f"Comparison of marginal gain, with {spread} spread after varying {interdiction_type} interdiction  budgets at {early_stop[1]}% infected")
                     plt.show()
          
 
 
 
 
-                # Area under number of infected over time
-                budgetComparison=[0]
-                for inf, b in zip(Num_infected,range(budget)):
-                    if(b>0):
-                        budgetComparison.append((Num_infected[0]-inf)/b)
+                # # Area under number of infected over time
+                # budgetComparison=[0]
+                # for inf, b in zip(Num_infected,range(budget)):
+                #     if(b>0):
+                #         budgetComparison.append((Num_infected[0]-inf)/b)
                 
-                if not Double_trouble and not new_start:
-                    plt.plot(budgetComparison)
-                    plt.xlabel("Budget")
-                    plt.ylabel("Improvement given budget")
-                    plt.title(f"Comparison of number of infected given baseline and budget, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
-                    plt.show()  
-                # d.append(budgetComparison.index(max(budgetComparison)))
+                # if not Double_trouble and not new_start:
+                #     plt.plot(budgetComparison)
+                #     plt.xlabel("Budget")
+                #     plt.ylabel("Improvement given budget")
+                #     plt.title(f"Comparison of number of infected given baseline and budget, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
+                #     plt.show()  
+                # # d.append(budgetComparison.index(max(budgetComparison)))
 
 
 
@@ -329,7 +339,7 @@ if not Run_single:
         plt.show()
 
 
-        plt.plot(delta)
+        plt.plot(delta, marker="o", linewidth=2)
         # plt.xlabel("Budget")
         # plt.ylabel("effectiveness")
         plt.title(f"Comparison of marginal gain, with {spread} spread after varying {interdiction_type} interdiction  budgets at {int(start_inf[0])}% infected")
