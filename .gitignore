@@ -10,3 +10,4 @@ tsp.mzn
 n100w140.001.dzn
 Determine critical nodes.mzn
 /new_test_data
+*.pkl

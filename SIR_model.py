@@ -15,14 +15,14 @@ import time
 new_graph=False # Should the simulation generate a random graph of n nodes
 n=100  # Number of nodes in graph
 spread=0.2 # The chance an infection will spread through an edge
-budget=50 # The interdiction budget
+budget=30 # The interdiction budget
 intervention_step={4} # The steps in the simulation where interdiction occur
 early_stop=(True,10)
 time_range=46 # The number of simulation steps
-repr= 30
+repr= 20
 mode="SI" # Infection model, SIR or SI 
-solver="gurobi"
-interdiction_type="semi edge" # Naive interdiction model, node or edge or edge mzn or semi edge
+solver="coin-bc"
+interdiction_type="edge" # Naive interdiction model, node or edge or edge mzn or semi edge
 verbose=0 # Should the simulation display each step
 infected_nodes= {11} # Which nodes are infected at start
 Run_single=False
@@ -97,7 +97,9 @@ if not Run_single:
         d=[]
         d_2=[]
         d_3=[]
+        d_4=[]
         s=[]
+        rec=[]
         repeat = repr if Double_trouble or new_start else 1
         for rep in range(repeat):
             #print("rep ", rep+1)
@@ -199,10 +201,26 @@ if not Run_single:
             # Pad remaining budgets with the last result (fully quarantined, no change)
             last = data_average[-1]
             data_average.extend([last] * (budget - count))  # fills up to budget+1 rows
-                
-                
+            # ADD THIS: enforce fixed row count AND fixed row length
+            target_rows = budget + 1
+            target_cols = time_range  # your fixed time axis
+            # Truncate or pad rows
+            data_average = data_average[:target_rows]
+            while len(data_average) < target_rows:
+                data_average.append(data_average[-1])
+
+            # Truncate or pad each row to fixed length
+            data_average = [
+                (row + [row[-1]] * target_cols)[:target_cols]
+                for row in data_average
+            ]
             last_inf = Num_infected[-1]
-            Num_infected.extend([last_inf] * (budget - count))   
+            # Pad if too short
+            if len(Num_infected) < budget + 1:
+                Num_infected.extend([last_inf] * (budget + 1 - len(Num_infected)))
+
+            # Truncate if too long
+            Num_infected = Num_infected[:budget + 1]
                 
             # plt.plot(data_average,ls="--",label="Infected")
             if verbose>=1:
@@ -235,55 +253,59 @@ if not Run_single:
                         test.append(1 - inf / Num_infected[0])
                     else:
                         test.append(0)
+
+                # Normalize test to always be exactly budget+1 elements
+                if len(test) < budget + 1:
+                    test.extend([test[-1]] * (budget + 1 - len(test)))
+                else:
+                    test = test[:budget + 1]
+
+                # ----- determine b* using 95% of max score -----
+                R = np.array(test)
+
+                alpha = 0.95
+                threshold = alpha * R.max()
+                beta = 0.1   # how much you penalize budget usage
+                max_budget = budget  # your max possible budget
+       
+                eligible = np.where(R >= threshold)[0]
+
+                if len(eligible) > 0:
+                    b_star = eligible[0]
+                else:
+                    b_star = len(R) - 1
+
+                print("b*:", b_star)
+                final_score = alpha * R[b_star] - beta * (b_star / max_budget)
+
+                s.append(final_score)
                 d.append(test)
+                rec.append(b_star)
+                
                 if not Double_trouble and not new_start:
                     plt.plot(test, marker="o", linewidth=2)
                     plt.xlabel("Budget")
                     plt.ylabel("Reduction of infection")
+                    plt.axvline(x = b_star, color = 'b', linestyle="--",label ="b*")
                     plt.title(f"Reduction of infection, with {count} infected edges, varying "
                             f"{interdiction_type} interdiction budgets at {early_stop[1]}% infected")                    
                     plt.grid(True, alpha=0.3)
+                    plt.legend()
                     plt.show()  
 
 
-                # Marginal gain 
-                delta=[0]
-                for b in range(1,budget+1):
-                    if(b>0):
-                        delta.append(test[b]-test[b-1])
-                
-                # tau=0.01
-                # b_star= next((b for b in range(1,len(delta)) if delta[b]<tau), len(delta)-1)
-                b_star=delta.index(max(delta))
-                print("b*:",b_star)
-                # # d.append(b)
-                s.append(test[b_star])
+           
 
                 if not Double_trouble and not new_start:
+                    delta = [0]
+                    for b in range(1, len(test)):
+                        delta.append(test[b] - test[b-1])
                     plt.plot(delta, marker="o", linewidth=2)
                     plt.grid(True, alpha=0.3)
 
                     plt.title(f"Comparison of marginal gain, with {spread} spread after varying {interdiction_type} interdiction  budgets at {early_stop[1]}% infected")
                     plt.show()
          
-
-
-
-
-                # # Area under number of infected over time
-                # budgetComparison=[0]
-                # for inf, b in zip(Num_infected,range(budget)):
-                #     if(b>0):
-                #         budgetComparison.append((Num_infected[0]-inf)/b)
-                
-                # if not Double_trouble and not new_start:
-                #     plt.plot(budgetComparison)
-                #     plt.xlabel("Budget")
-                #     plt.ylabel("Improvement given budget")
-                #     plt.title(f"Comparison of number of infected given baseline and budget, with {spread} spread after varying {interdiction_type} interdiction  budgets at {intervention_step}")
-                #     plt.show()  
-                # # d.append(budgetComparison.index(max(budgetComparison)))
-
 
 
             #--- Heat map ------------------------------------
@@ -301,7 +323,7 @@ if not Run_single:
                 plt.ylabel("Budget")
                 plt.title(f"Infected nodes with spread {spread} after varying {interdiction_type} interdiction budgets at {intervention_step}")
                 plt.show()  
-        # Reccomended.append(np.mean(d,axis=0))
+        Reccomended.append(np.mean(rec,axis=0))
         score.append(np.mean(d,axis=0))
         score_std.append(np.std(d,axis=0))
         avg_heat.append(np.mean(d_3,axis=0))
@@ -311,39 +333,51 @@ if not Run_single:
         start_inf.append(np.mean(d_2,axis=0))
     #--- Plot graph ------------------------------------
     if new_start and not Double_trouble:
+        print(bst_score)
         steps = range(budget + 1)  # also fix: steps should match score length
 
         mean_score = np.mean(score, axis=0)      # shape (budget+1,)
         mean_std   = np.mean(score_std, axis=0)  # shape (budget+1,)
 
-                # Marginal gain 
-        delta=[0]
-        for b in range(1,budget+1):
-            if(b>0):
-                delta.append(mean_score[b]-mean_score[b-1])
-                
-        # tau=0.01
-        # b_star= next((b for b in range(1,len(delta)) if delta[b]<tau), len(delta)-1)
-        b_star=delta.index(max(delta))
-        print("b*:",b_star, "\nfinal score:",mean_score[b_star])
-        # # d.append(b)
+        # ----- determine b* using 95% of max score -----
+        R = np.array(mean_score)
+
+        alpha = 0.95
+        threshold = alpha * R.max()
+
+        eligible = np.where(R >= threshold)[0]
+
+        if len(eligible) > 0:
+            b_star = eligible[0]
+        else:
+            b_star = len(R) - 1
+        
+        beta = 0.1   # how much you penalize budget usage
+
+        max_budget = budget  # your max possible budget
+        final_score = alpha * mean_score[b_star] - beta * (b_star / max_budget)
+        
+
+        print("b*:", b_star)
+        print("mean b* score: ", mean_score[b_star])
+        print("final score =", final_score) 
 
         plt.fill_between(steps, mean_score - mean_std, mean_score + mean_std, alpha=0.2)
         plt.plot(steps, mean_score, marker="o", linewidth=2)
         plt.xlabel("Budget")
         plt.ylabel("Reduction of infection")
-        plt.axvline(x = b_star, color = 'b', linestyle="--",label ="b*")
+        # plt.axvline(x = b_star, color = 'b', linestyle="--",label ="b*")
         plt.title(f"Reduction of infection, with {spread} spread over varying "
                 f"{interdiction_type} interdiction budgets at {int(start_inf[0])}% infected")
         plt.grid(True, alpha=0.3)
         plt.show()
 
 
-        plt.plot(delta, marker="o", linewidth=2)
-        # plt.xlabel("Budget")
-        # plt.ylabel("effectiveness")
-        plt.title(f"Comparison of marginal gain, with {spread} spread after varying {interdiction_type} interdiction  budgets at {int(start_inf[0])}% infected")
-        plt.show()
+        # plt.plot(delta, marker="o", linewidth=2)
+        # # plt.xlabel("Budget")
+        # # plt.ylabel("effectiveness")
+        # plt.title(f"Comparison of marginal gain, with {spread} spread after varying {interdiction_type} interdiction  budgets at {int(start_inf[0])}% infected")
+        # plt.show()
         
         df = pd.DataFrame(
                     np.mean(avg_heat, axis=0),
@@ -379,33 +413,31 @@ if not Run_single:
             "intervention_step": list(intervention_step),
         }
         }
-        with open("results.pkl", "wb") as f:
+        with open(f"{interdiction_type}_results.pkl", "wb") as f:
             pickle.dump(results, f)
         
         
     if Double_trouble:
         from matplotlib.ticker import MaxNLocator
-        print(bst_score)
-        print(bst_score_std)
-        print(start_inf)
-        steps = range(len(bst_score))
+
+        x = start_inf  # percent infected — now the x axis
 
         fig, (ax1, ax2) = plt.subplots(
             2, 1, figsize=(9, 6), dpi=150, sharex=True
         )
 
-        ax1.fill_between(steps, np.array(bst_score) - np.array(bst_score_std), np.array(bst_score) + np.array(bst_score_std), alpha=0.2)    
-        ax1.plot(steps, bst_score, marker="o", linewidth=2)
-        ax1.set_ylabel("bst_score")
-        ax1.set_title(
-            f"Interdiction analysis (spread={spread},  type={interdiction_type})"
-        )
+        ax1.fill_between(x,
+                        np.array(bst_score) - np.array(bst_score_std),
+                        np.array(bst_score) + np.array(bst_score_std),
+                        alpha=0.2)
+        ax1.plot(x, bst_score, marker="o", linewidth=2)
+        ax1.set_ylabel("Score")
+        ax1.set_title(f"Interdiction analysis (spread={spread}, type={interdiction_type})")
         ax1.grid(True, alpha=0.3)
 
-        ax2.plot(steps, start_inf, marker="s", linestyle="--", linewidth=2)
-        # ax2.set_xlabel("Interdiction step")
-        ax2.set_ylabel("Percent infected (%)")
-        ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax2.plot(x, Reccomended, marker="s", linestyle="--", linewidth=2, color="darkorange")
+        ax2.set_xlabel("Percent infected at interdiction (%)")
+        ax2.set_ylabel("Avg b*")
         ax2.grid(True, alpha=0.3)
 
         plt.tight_layout()
