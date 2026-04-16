@@ -35,60 +35,20 @@ def show(n, edges, sets=None, layout=None):
     plt.show()
     return layout
 
-def analys_GF(edges, sets):
-    G=nx.Graph(edges)
-    Gf=nx.Graph(filter_edges(sets[1],edges,mode=1))
-    exposure=len(filter_edges(sets[1],edges,mode=1))*0.2
-    # print("infection exposure:",exposure)
 
-    betweenes = nx.betweenness_centrality(G)
-    avg_betweenness=[]
-    for s in Gf.nodes():
-        if s in (set.union(sets[0],sets[3])):
-            avg_betweenness.append(betweenes[s])
-            # print("node:", s, " ", betweenes[s])
-    max_centrality=max(avg_betweenness) if len(avg_betweenness)>0 else 0
-    # print("average betweenes in S nodes touching infected nodes:",average_centrality)
-    # show(15,edges,sets)
-    return [exposure,max_centrality]
+def generate_graph(n=10, seed=42,):
+    # G=nx.barabasi_albert_graph(n,3,seed=seed)
+    G=nx.newman_watts_strogatz_graph(n,4,0.2,seed=seed)
+    # G = nx.karate_club_graph()
+    # G=nx.erdos_renyi_graph(n,0.05,seed=seed)
+    
+    edges= list(G.edges())
+    final_edges=edges.copy()
+    for edge in edges:
+        (i,j)=edge
+        final_edges.append((j,i))
 
-def analys_Gh(edges, sets):
-    healthyEdges=[]
-    if sets[3]==set():
-        healthyEdges=filter_edges(sets[0],edges)
-    else:
-        healthyEdges=filter_edges(set.union(sets[0],set(sets[3] - sets[1])),edges)
-    Gh=nx.Graph(healthyEdges)
-    # betweenes = nx.betweenness_centrality(G)
-    ccs= nx.number_connected_components(Gh)
-    # print("number of connected components",ccs)
-    ccs_2=nx.connected_components(Gh)
-    max=0
-    for cc in ccs_2:
-        max=max if len(cc)<max else len(cc)
-    efficentcy=(nx.global_efficiency(Gh))/len(Gh.nodes()) if len(Gh.nodes())>0 else 0
-    # print("efficency=", efficentcy)
-    # eff=[betweenes[s] for s in set.union(sets[0],set(sets[3]-sets[1]))]
-    # print("average efficency:",np.mean(eff))
-    # for s in sets[0]:
-    #     print("node:", s, " ", betweenes[s])
-
-    # print("average connectivity:",nx.average_node_connectivity(Gh))
-    # print("css_2=",max)
-    return [ccs,max,efficentcy]
-
-def generate_graph(n=10, displ=False,):
-    p=1/n # The probability is set proportioinal to size of end graph
-    edges =[]
-    for i in range(n):
-        for j in range(n):
-            noise=np.random.normal(scale=0.03)
-            if i!=j and np.random.uniform(0,1) <= p+noise:
-                edges.append((i,j)); edges.append((j,i))
-    if displ:
-        show(n,edges)
-    print("edges=",edges)
-    return set(edges)
+    return list(final_edges)
 
 
 def filter_edges(nodes, edges, mode=0):
@@ -182,16 +142,18 @@ def analyse_graph(n,edges):
 
 if __name__=="__main__":
     n=100
-    print(1/n)
-    for _ in range(100):
-        edges=generate_graph(n,False)
+    for _ in range(10):
+        seed= np.random.randint(0,100)
+        edges=generate_graph(n,seed)
         G = nx.Graph()
         G.add_nodes_from(range(n))
         G.add_edges_from(edges)
         avg_degree = sum(d for _, d in G.degree()) / n
         print(avg_degree)
+        print("edges=",edges)
+        show(n,edges)
 
-        if (avg_degree>2.5 and avg_degree<3.2):
-            show(n,edges)
+        # if (avg_degree>2.5):
+        #     show(n,edges)
 
 

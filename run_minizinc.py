@@ -63,7 +63,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
     rand_seed=np.random.randint(0,100)
     result = instance.solve(random_seed=rand_seed)
     # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
-    # print(time.time() - start_mzn)
+    print(time.time() - start_mzn)
     # print(result) #if displ:
     # print(result,", bounds:[",min(result["pi"]),",",max(result["pi"]),"]")
     # if result.status=="UNBOUNDED":
