@@ -74,7 +74,7 @@ def determine_T(edges, sets):
 
 def determine_k_dangerous_edges(edges, risk_edges,sets,budget):
     healthyEdges=[]
-    if sets[3]==set():
+    if sets[2]==set():
         healthyEdges=filter_edges(sets[0],edges)
     else:
         healthyEdges=filter_edges(set.union(sets[0],set(sets[3] - sets[1])),edges)

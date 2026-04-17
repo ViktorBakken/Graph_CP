@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def cascade(t=4, n=100,spread=0.2,budget=8,graph_edges=None, init_infected=None, mode="SI",budget_type="edge",intervention_step=None,displ=0,T=set(), layout=None,solver="cbc", early_stop=(False,0)):
+def cascade(t=4, n=100,spread=0.2,graph_edges=None, init_infected=None, mode="SI",displ=0, layout=None, early_stop=(False,0), T_set=set()):
     # Initialization
     if graph_edges is None:
         edges= [(23, 4), (4, 23), (67, 4), (4, 67), (69, 1), (1, 69), (15, 30), (30, 15), (80, 65), (65, 80), (73, 26), (26, 73), (8, 0), (0, 8), (61, 70), (70, 61), (71, 38), (38, 71), (63, 34), (34, 63), (96, 67), (67, 96), (73, 35), (35, 73), (92, 79), (79, 92), (85, 73), (73, 85), (21, 37), (37, 21), (28, 30), (30, 28), (46, 66), (66, 46), (86, 47), (47, 86), (67, 98), (98, 67), (85, 27), (27, 85), (17, 94), (94, 17), (55, 50), (50, 55), (6, 11), (11, 6), (69, 49), (49, 69), (6, 75), (75, 6), (99, 93), (93, 99), (2, 32), (32, 2), (11, 44), (44, 11), (47, 18), (18, 47), (91, 18), (18, 91), (8, 11), (11, 8), (23, 27), (27, 23), (6, 41), (41, 6), (52, 8), (8, 52), (30, 75), (75, 30), (82, 58), (58, 82), (66, 7), (7, 66), (67, 27), (27, 67), (74, 84), (84, 74), (11, 80), (80, 11), (38, 64), (64, 38), (80, 88), (88, 80), (64, 0), (0, 64), (81, 16), (16, 81), (39, 10), (10, 39), (0, 46), (46, 0), (55, 79), (79, 55), (15, 46), (46, 15), (37, 28), (28, 37), (5, 23), (23, 5), (84, 45), (45, 84), (48, 58), (58, 48), (61, 22), (22, 61), (35, 67), (67, 35), (77, 48), (48, 77), (61, 31), (31, 61), (24, 21), (21, 24), (70, 43), (43, 70), (71, 72), (72, 71), (35, 85), (85, 35), (76, 31), (31, 76), (13, 94), (94, 13), (83, 0), (0, 83), (63, 31), (31, 63), (60, 16), (16, 60), (11, 66), (66, 11), (98, 9), (9, 98), (15, 66), (66, 15), (32, 27), (27, 32), (25, 22), (22, 25), (19, 36), (36, 19), (76, 88), (88, 76), (87, 70), (70, 87), (18, 80), (80, 18), (0, 96), (96, 0), (83, 48), (48, 83), (76, 97), (97, 76), (84, 86), (86, 84), (46, 47), (47, 46), (3, 21), (21, 3), (14, 21), (21, 14), (68, 1), (1, 68), (23, 33), (33, 23), (83, 84), (84, 83), (66, 77), (77, 66), (43, 20), (20, 43), (34, 48), (48, 34), (81, 77), (77, 81), (53, 6), (6, 53), (85, 93), (93, 85), (22, 0), (0, 22), (91, 54), (54, 91), (22, 73), (73, 22), (39, 89), (89, 39), (15, 34), (34, 15), (93, 69), (69, 93), (84, 97), (97, 84), (5, 84), (84, 5), (69, 87), (87, 69), (44, 12), (12, 44), (40, 81), (81, 40), (18, 50), (50, 18), (27, 28), (28, 27), (7, 59), (59, 7), (10, 85), (85, 10), (48, 69), (69, 48), (94, 36), (36, 94), (72, 90), (90, 72), (94, 72), (72, 94), (95, 92), (92, 95), (19, 72), (72, 19), (67, 39), (39, 67), (91, 88), (88, 91), (19, 81), (81, 19), (29, 3), (3, 29), (31, 18), (18, 31), (40, 94), (94, 40), (44, 64), (64, 44), (65, 62), (62, 65), (25, 78), (78, 25), (57, 76), (76, 57), (74, 83), (83, 74), (46, 85), (85, 46), (98, 31), (31, 98), (0, 42), (42, 0), (49, 90), (90, 49), (87, 74), (74, 87), (36, 37), (37, 36), (92, 91), (91, 92), (90, 56), (56, 90), (71, 70), (70, 71), (24, 77), (77, 24), (51, 6), (6, 51), (59, 51), (51, 59), (29, 4), (4, 29)]
@@ -18,32 +18,20 @@ def cascade(t=4, n=100,spread=0.2,budget=8,graph_edges=None, init_infected=None,
     else:
         infected=init_infected.copy()
 
-    if intervention_step is None:
-        intervention_step={0}
-    else:
-        intervention_step=set(intervention_step)
-
-    if T==set(): 
-        #15
-        # T={0,1}
-        #100
-        T={69, 6, 48,21, 18,88, 22, 23, 25, 27, 30, 73, 76, 77, 81, 84, 90, 91, 92, 93, 94, 98}
-        # T=set()
-        # T=determine_T(edges,[])
-    else:
-        T=T.copy()
 
     suceptible={i for i in range(n)}
     for inf in infected:
         suceptible.remove(inf)
-
-    safe=set()
+    T=set()
+    if T_set!=set():
+        T=T_set.copy()
     removed=set()
     risk_edges=set()    
 
 
     infected_over_time=[]
-    sets=[{},{},{},{}]
+    sets=[suceptible,infected,T]
+    
     #-------------------------------
     #---Spread model----------------
     #-------------------------------
@@ -54,86 +42,27 @@ def cascade(t=4, n=100,spread=0.2,budget=8,graph_edges=None, init_infected=None,
             if displ>=1: print("stopping")
             t=time
             break
-        sets=[suceptible,infected,safe,removed]
+        sets=[suceptible,infected,T]
         infected_over_time.append(len(infected))
 
         if len(risk_edges)>0 or time==0:
             if displ>=3:show(n=n,edges=edges,sets=sets,layout=layout)           
 
-            # # Interdiction mode: node
-            # if time in intervention_step and budget>0:
-            #     match budget_type:
-            #         case "node":
-            #             if len(infected)> budget:
-            #                 temp_infected=list(infected)
-            #                 np.random.shuffle(temp_infected)
-            #                 rem_nodes= set(temp_infected[:budget])
-            #                 infected=set(temp_infected[budget:])
-            #             else:
-            #                 rem_nodes=infected.copy()
-            #                 infected.clear()
-            #             for node in rem_nodes:
-            #                 removed.add(node)
-            #         case "edge mzn":
-            #             if len(intervention_step)>1:
-            #                 T=determine_T(edges,sets)
-            #             T=set(T)-infected
-            #             edges,_=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=budget,infected_nodes=infected,critical_nodes=T, graph_edges=edges,interdiction_type="edge", displ=displ)    
-            #         case "node mzn":
-            #             T=T-infected
-            #             edges,rem_nodes=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=budget,infected_nodes=infected,critical_nodes=T, graph_edges=edges,interdiction_type="node", displ=displ)                      
-            #             for node in rem_nodes:
-            #                 removed.add(node)
             # Determine which edges are adjacent to infected nodes
             risk_edges.clear()
             for edge in edges:
                 (i,j)=edge
                 if i in infected and j in suceptible :
                     risk_edges.add(edge)
-                        
-            # # Interdiction mode: edges
-            # if time in intervention_step and budget>0:
-            #     match budget_type:
-            #         case "edge" :
-            #             temp_risk_edges=list(risk_edges)
-            #             np.random.shuffle(temp_risk_edges)
-            #             if(len(temp_risk_edges)>budget):
-            #                 rem_edges= temp_risk_edges[:budget]
-            #                 risk_edges=set(temp_risk_edges[budget:])
-            #             else:
-            #                 rem_edges=risk_edges.copy()
-            #                 risk_edges.clear()
-            #             for edge in rem_edges:
-            #                 (i,j)=edge
-            #                 edges.remove((i,j))
-            #                 edges.remove((j,i))
-            #         case "semi edge":
-            #             if(len(risk_edges)>budget):
-            #                 rem_edges= determine_k_dangerous_edges(edges,risk_edges,sets,budget)
-            #                 risk_edges-=rem_edges
-            #             else:
-            #                 rem_edges=risk_edges.copy()
-            #                 risk_edges.clear()
-            #             for edge in rem_edges:
-            #                 (i,j)=edge
-            #                 edges.remove((i,j))
-            #                 edges.remove((j,i))
-                        
-
-            
-            
-            # #Infection step
-            # if(mode=="SIR"):
-            #     for inf_edge in risk_edges:
-            #         (i, j) = inf_edge
-            #         if j in suceptible:
-            #             if np.random.uniform(0,1)<=spread:
-            #                 infected.add(j)
-            #             else:
-            #                 safe.add(j)
-            #             suceptible.discard(j)
-
+                if i in infected and j in infected :
+                    removed.add(edge)
+                
             if(mode=="SI"):
+                if len(removed)>0:
+                    for edge in removed:
+                        edges.remove(edge)
+                    removed.clear()
+            
                 for inf_edge in risk_edges:
                     (i, j) = inf_edge
                     if j in suceptible:
@@ -141,7 +70,7 @@ def cascade(t=4, n=100,spread=0.2,budget=8,graph_edges=None, init_infected=None,
                             infected.add(j)                   
                             suceptible.discard(j)
             
-    return edges, sets, infected_over_time, t
+    return edges, list(sets), infected_over_time, t
 
 if __name__=="__main__":
     # np.random.seed(42)
@@ -153,7 +82,7 @@ if __name__=="__main__":
     #     start= time.time()
     #     cascade(solver =solve,displ=displ,budget_type="edge mzn",intervention_step=intervention_step)
     #     print(solve," run time: ",time.time() - start,"s\n")
-# --------------------------------------------------------
+    # --------------------------------------------------------
     # from matplotlib.ticker import MaxNLocator
     # spread=0.2
     # interdiction_type="edge"
@@ -206,12 +135,11 @@ if __name__=="__main__":
     # exp_budget=1-(exp/exp[0])
     # print(exp_budget)
     
-    exp_budget= [0.0, 0.007864971896994866, 0.023632732284025848, 0.03672606803293044, 0.05338999372948139, 0.07487773367796269, 0.10137397356532207, 0.1380033014765183, 0.18229268811776278, 0.21512012924480284, 0.283369405672665, 0.3319276700493463, 0.4098799806871539, 0.4756175317725342, 0.5286073731802964, 0.5848784636261539, 0.6678638989610991, 0.7251120646364726, 0.761478435307682, 0.7869114133116166, 0.8049129910550565, 0.8171901919587852, 0.8208153081568632, 0.8229866841619711, 0.8394685625385312, 0.8394685625385312, 0.8394685625385312, 0.8394685625385312, 0.8394685625385312, 0.8394685625385312, 0.8394685625385312]    
-    exp_budget_2= [0.0, 0.024994670129467655, 0.04401423236943469, 0.06517704860841944, 0.09183286172054717, 0.14733781042458105, 0.20144487944801936, 0.267907557433393, 0.34106649094245056, 0.3861329689640025, 0.48305666459932317, 0.5410537315554179, 0.605852036333566, 0.6537142737163089, 0.6916734501382538, 0.7255681965010208, 0.7664160012404062, 0.7778453433082668, 0.7893199085200404, 0.8028206320903429, 0.8206361281236272, 0.8249404023567719, 0.8294287993901337, 0.8330151562136601, 0.8382142026513684, 0.8385671046851177, 0.838596984262346, 0.8389410031785409, 0.8389410031785409, 0.8389410031785409, 0.8389410031785409]
-    exp_budget_3= [0.0, 0.012428654733799505, 0.023802649106247964, 0.03601212212384641, 0.05662490891018168, 0.07784833110512057, 0.10350391494131805, 0.16599496771720235, 0.207936319219163, 0.27791028431346365, 0.3716003581316012, 0.46640251630315654, 0.5380288365494813, 0.5974149498106222, 0.643081581699378, 0.7016273635836452, 0.7307720615294031, 0.7564405859835314, 0.7687632894080234, 0.7992335919030553, 0.8058543355518405, 0.8223916364786313, 0.8270955510964343, 0.8328929479293797, 0.8335876973545333, 0.8339621664859024, 0.835866054898954, 0.8358895097689534, 0.8390470205440397, 0.8390470205440397, 0.8390470205440397]
+    exp_budget= [0.0, 0.027852347906621278, 0.05242271062508308, 0.0675729500950435, 0.09538805791319505, 0.14531082520797778, 0.17712195643233497, 0.20689297846227594, 0.24668967996191815, 0.318359039788606, 0.3463684437205117, 0.41331640798297964, 0.48993222303898554, 0.596293153976432, 0.6476585699158375, 0.6598862720080827, 0.7299445932248945, 0.7528844877221048, 0.7692183143516824, 0.7842454996162652, 0.7953576181887069]
+    exp_budget_2=  [0.0, 0.005212263329579914, 0.027732955666740278, 0.05299327861811187, 0.05453722298968011, 0.08391860046666588, 0.12292351090628373, 0.17012409597994038, 0.18677083454256294, 0.23113892016762827, 0.3364289611460015, 0.40401425536607727, 0.4811766481315951, 0.5762859431410562, 0.6635710388539986, 0.788990399684246, 0.828366785461384, 0.8409621211241772, 0.8409621211241772, 0.8409621211241772, 0.8409621211241772]
+    exp_budget_3= [0.0, 0.02387168530117678, 0.044933559679212975, 0.06351343440847623, 0.07478780073757552, 0.07157993326699075, 0.15483228941052507, 0.22986594860387533, 0.30712404144471117, 0.40319615992507174, 0.54554820581865, 0.6317742785225078, 0.7366036410466545, 0.7799566820816015, 0.779734238716853, 0.8061347538488556, 0.8273605338640754, 0.8396066264707605, 0.8396066264707605, 0.8396066264707605, 0.8396066264707605]
     
-    final_outbreak= [0.0, 0.002319642239792863, 0.005609519454883971, 0.005654127959495381, 0.010839866620571459, 0.017308099789225095, 0.02024110896742437, 0.0294193087912209, 0.05726616779489002, 0.11523491953740983, 0.14987342336816523, 0.1838874081343611, 0.20187578761890967, 0.31065362611381864, 0.34011754340965106, 0.4437430996219429, 0.47240406383477007, 0.639139501946046, 0.6990598757653146, 0.7100670242781786, 0.7561587616679121]
-    # num_infected = hm[:,-1]
+    final_outbreak= [0.0, 0.005070993914807254, 0.00845165652467883, 0.024002704530087793, 0.02974983096686945, 0.03651115618661249, 0.03989181879648396, 0.06693711967545635, 0.039215686274509776, 0.060175794455713194, 0.08688302907369838, 0.15922920892494918, 0.12271805273833669, 0.15077755240027035, 0.31102096010818114, 0.22143340094658548, 0.2826233941852603, 0.8985801217038539, 0.8985801217038539, 0.8985801217038539, 0.8985801217038539]    # num_infected = hm[:,-1]
     # final_outbreak=1-(num_infected/num_infected [0])
     # plt.plot(final_outbreak, marker="o", linewidth=2)
     # plt.xlabel("Budget")
@@ -221,9 +149,9 @@ if __name__=="__main__":
     # plt.show()  
     
     
-    plt.plot(final_outbreak, marker="o", linewidth=2, label="edge")
-    # plt.plot(final_outbreak_2, marker="o", linewidth=2, label="semi edge")
-    # plt.plot(final_outbreak_3, marker="o", linewidth=2, label="edge mzn")
+    plt.plot(exp_budget, marker="o", linewidth=2, label="edge")
+    plt.plot(exp_budget_2, marker="o", linewidth=2, label="semi edge")
+    plt.plot(exp_budget_3, marker="o", linewidth=2, label="edge mzn")
     plt.xlabel("Budget")
     plt.ylabel("ExposureReduction")
     plt.title(f"ExposureReduction over varying interdiction budgets")
@@ -250,7 +178,7 @@ if __name__=="__main__":
     # print("b 50: ", b_50,"\nb 70: ", b_70,"\nb 90: ", b_90,)
         
     
-# # ----------------------------------------------------------------------------
+ # ----------------------------------------------------------------------------
  
     # df=pd.read_csv("data",index_col=0)
 
@@ -268,13 +196,13 @@ if __name__=="__main__":
     # plt.title(f"Infected nodes with spread {0.2} after varying {"edge mzn"} interdiction budgets at {4}")
     # plt.show()  
 
-#--- Stats ------------------------------------
-# # t, edges, sets, infected_over_time =cascade(budget_type="edge mzn", displ=True)
+    #--- Stats ------------------------------------
+    # # t, edges, sets, infected_over_time =cascade(budget_type="edge mzn", displ=True)
 
-    # show(3,edges,sets) #Display graph after simulation
+        # show(3,edges,sets) #Display graph after simulation
 
-    # print("Sim mode: ", "SI")
-    # print("Sim steps: ", t)
-    # print("Num suceptible: ", len(sets[0]))
-    # print("Num infected: ", len(sets[1]))
-    # print("Num safe: ", len(sets[2]))
+        # print("Sim mode: ", "SI")
+        # print("Sim steps: ", t)
+        # print("Num suceptible: ", len(sets[0]))
+        # print("Num infected: ", len(sets[1]))
+        # print("Num safe: ", len(sets[2]))
