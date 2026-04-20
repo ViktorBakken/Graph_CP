@@ -47,8 +47,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
     model_choice="Solver_node.mzn" if interdiction_type=="node" else "Solver.mzn"
     # Create an instance
     instance = Instance(solver, Model(model_choice))
-
-
+    
     # Pass data from Python to MiniZinc
     instance["K"] = k
     instance["n"] = len(nodes)
@@ -61,7 +60,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
     # Solve
     start_mzn= time.time()
     rand_seed=np.random.randint(0,100)
-    result = instance.solve(random_seed=rand_seed)
+    result = instance.solve(random_seed=rand_seed, processes=1)
     # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
     print(time.time() - start_mzn)
     # print(result) #if displ:
@@ -109,7 +108,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
 
 if __name__=="__main__":
     displ=0
-    sovl=["cbc","highs","coinbc","coin-bc"]
+    sovl=["cplex","cbc","highs","coinbc","coin-bc"]
     for solver in sovl:
         print(solver)
         start= time.time()
