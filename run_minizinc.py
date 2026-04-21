@@ -60,7 +60,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,critical_no
     # Solve
     start_mzn= time.time()
     rand_seed=np.random.randint(0,100)
-    result = instance.solve(random_seed=rand_seed, processes=1)
+    result = instance.solve(random_seed=rand_seed, processes=4,free_search=True)
     # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
     print(time.time() - start_mzn)
     # print(result) #if displ:

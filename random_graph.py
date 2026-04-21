@@ -9,7 +9,7 @@ def show(n, edges, sets=None, layout=None):
     if sets is None:
         sets = [{i for i in range(n)}, {}, {}, {}]
 
-    colorStates = {"S": "green", "I": "red", "R": "black", "B": "yellow"}
+    colorStates = {"S": "green", "I": "red", "B": "yellow"}
 
     G = nx.Graph()
     G.add_nodes_from(range(n))
@@ -23,9 +23,8 @@ def show(n, edges, sets=None, layout=None):
     for i in sets[1]:
         G.nodes[i]["state"] = "I"
     for r in sets[2]:
-        G.nodes[r]["state"] = "R"
-    for b in sets[3]:
-        G.nodes[b]["state"] = "B"
+        G.nodes[r]["state"] = "B"
+
 
     if layout is None:
         layout = nx.spring_layout(G, seed=42)

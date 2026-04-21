@@ -16,14 +16,13 @@ np.random.seed(42)
 new_graph=False # Should the simulation generate a random graph of n nodes
 n=1000  # Number of nodes in graph
 spread=0.2 # The chance an infection will spread through an edge
-budget=1 # The interdiction budget
+budget=600 # The interdiction budget
 intervention_step={4} # The steps in the simulation where interdiction occur
 early_stop=(True,10)
 time_range=200 # The number of simulation steps
 repr= 30
-mode="SI" # Infection model, SIR or SI 
-solver="coin-bc"
-interdiction_types=["edge mzn"]#"edge","semi edge", 
+solver="highs"
+interdiction_types=["edge mzn","edge","semi edge"]#
 interdiction_type="semi edge" # Naive interdiction model, node or edge or edge mzn or semi edge
 verbose=0 # Should the simulation display each step
 infected_nodes= {11} # Which nodes are infected at start
@@ -69,20 +68,19 @@ for edge in edges:
 
 
 #--- Run Simulation -------------------------------------------------------------------------------------------------------------------------------------------
-if Run_single:
-    T=set()
-    if interdiction_type=="edge mzn" or interdiction_type=="node mzn":
-        T=determine_T(edges,[{n for n in range(n)},infected_nodes,{},{}])
-    new_edges, sets,inf,Data=cascade(t=time_range,n=n,spread=spread,graph_edges=edges,init_infected=infected_nodes,
-                        mode=mode,displ=verbose)
+# if Run_single:
+#     T=set()
+#     if interdiction_type=="edge mzn" or interdiction_type=="node mzn":
+#         T=determine_T(edges,[{n for n in range(n)},infected_nodes,{},{}])
+#     new_edges, sets,inf,Data=cascade(t=time_range,n=n,spread=spread,graph_edges=edges,init_infected=infected_nodes,
+#                         displ=verbose)
    
-    show(n,new_edges,sets) #Display graph after simulation
+#     show(n,new_edges,sets) #Display graph after simulation
 
-    print("Sim mode: ", mode)
-    print("Sim steps: ", time_range)
-    print("Num suceptible: ", len(sets[0]))
-    print("Num infected: ", len(sets[1]))
-    print("Num safe: ", len(sets[2]))
+#     print("Sim steps: ", time_range)
+#     print("Num suceptible: ", len(sets[0]))
+#     print("Num infected: ", len(sets[1]))
+#     print("Num safe: ", len(sets[2]))
 
 # ---Display multiple independent runs of simulation with varying simulaiton steps and varying budgets----------------------------------------------------------
 if not Run_single:
@@ -100,8 +98,8 @@ if not Run_single:
         
         T=set()
         # Let the Simulations have a common start before interdiction
-        _, sets,head_start_infected,end_time_step=cascade(t=head_start,n=n,spread=spread,graph_edges=edges,init_infected=infected_nodes, T_set=T,
-                                            mode=mode,displ=False,early_stop=early_stop)   
+        edges, sets,head_start_infected,end_time_step=cascade(t=head_start,n=n,spread=spread,graph_edges=edges,init_infected=infected_nodes, T_set=T,
+                                            displ=False,early_stop=early_stop)   
         
         if early_stop[0]:
             head_start=end_time_step
@@ -147,7 +145,7 @@ if not Run_single:
                 data_average=[]
 
                 #Run second time
-                if verbose>=2:show(n,edges,sets,layout)
+                # if verbose>=2:show(n,edges,sets,layout)
                 for b in range(count+1):
                     # print("\nBUDGET:", b)
                     data=[]
@@ -155,8 +153,19 @@ if not Run_single:
                     new_edges=edges.copy() if interdiction_type!= "edge mzn" else []
                     # Interdict
                     for step in updated_intervention_steps:
-                        if verbose>=1:show(n,edges,sets,layout)
+                        if verbose>=1 and interdiction_type!="edge mzn":show(n,edges,sets,layout); print("before")
 
+                        # Clear graph from unnecesary edges
+                        remove=set()
+                        for edge in edges:
+                            (i,j)=edge
+                            if i in sets[1] and j in sets[1] :
+                                remove.add(edge)
+                        for edge in remove:
+                            edges.remove(edge)
+                        
+                        
+                        
                         match interdiction_type:
                             case "edge mzn":
                                 T=determine_T(edges,sets)
@@ -203,11 +212,11 @@ if not Run_single:
                                     new_edges.remove((i,j))
                                     new_edges.remove((j,i))
 
-                        if verbose>=1:show(n,new_edges,sets,layout)
+                        if verbose>=1 and interdiction_type!="edge mzn":show(n,new_edges,sets,layout);print("after")
             
                         for _ in range(repr):
                             _, _ ,infected_over_time,_=cascade(t=t-step,n=n,spread=spread,graph_edges=new_edges,init_infected=new_infected, T_set=T,
-                                                        mode=mode,displ=verbose,layout=layout)
+                                                        displ=verbose,layout=layout)
                             data.append(infected_over_time)
 
                     

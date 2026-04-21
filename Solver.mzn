@@ -4,6 +4,7 @@ int: m; % number of directional edges
 int: K; % budget
 set of int: V=0..n-1; % set of nodes
 set of int: E=0..m-1; % set of edges
+set of int: E_can = { e | e in E where i[e] in S /\ not (j[e] in S) };
 
 array[E] of int: i; % the tail vector of edge
 array[E] of int: j; % the head vector of edges
@@ -13,7 +14,7 @@ array[V] of int: b; % the vector of start node and ending node
 set of int: S={s | s in index_set(b) where b[s]=1};
 set of int: T={t | t in index_set(b) where b[t]=-1};
 % Decsion Variables
-int: M = sum(c);  % upperbound of beta
+int: M = m;  % upperbound of beta
 
 array[V] of var -2*M..M: pi; 
 array[E] of var 0..M: beta; 
@@ -22,8 +23,8 @@ array[E] of var 0..1: x; % interdiction vector
 array[0..0] of var 0..0:z; % Does Nothing 
 
 % Constraints
-constraint forall(e in E)(0 <= w[e]);
 constraint forall(s in S)(pi[s]=0);
+
 
 constraint sum(x) <= K;  % ensure interdiction stays within budget
 
@@ -37,7 +38,8 @@ constraint forall(e in E)(
 constraint forall(e in E)(beta[e] - M*x[e] <= w[e]);
 
 % Interdicted edges are connected to infected nodes
-constraint forall(e in E)(x[e]=1->(i[e] in S/\(j[e] in S)=false));
+% constraint forall(e in E)(x[e]=1->(i[e] in S/\(j[e] in S)=false));
+constraint forall(e in E diff E_can)(x[e] = 0);
 
 % Objective
 var int: obj= sum(v in V)(b[v] * pi[v]) - sum(w);
