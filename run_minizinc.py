@@ -26,11 +26,13 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     if infected_edges==None:
         #Search
         inf_edges=[idx for idx, (i,j) in enumerate(edges) if i in S and j not in S]
-        
     else:
         #copy
         inf_edges=[edges.index(edge) for edge in infected_edges]
     # print("inf_edges:",inf_edges,"\ninfected_edges:",[edges[idx] for idx in inf_edges])
+
+    if interdiction_type == "edge" and (k <= 0 or len(inf_edges) == 0):
+        return edges.copy(), set()
 
     if critical_nodes==None: 
         #15
@@ -66,15 +68,15 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     instance["j"] = head
     instance["c"] = [1 for _ in range(len(edges))]
     instance["b"] = b
-    instance["can_e"] = inf_edges
-    instance["m_can"] = len(inf_edges)
+    instance["idx_inf"] = inf_edges
+    instance["inf"] = len(inf_edges)
 
     # Solve
     start_mzn= time.time()
     rand_seed=np.random.randint(0,100)
     result = instance.solve(random_seed=rand_seed, processes=4,free_search=True)
-    # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
-    print(time.time() - start_mzn)
+    print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
+    # print(time.time() - start_mzn)
     # print(result["x"]) #if displ:
     # print(result,", bounds:[",min(result["pi"]),",",max(result["pi"]),"]")
     # if result.status=="UNBOUNDED":
@@ -83,7 +85,6 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     node_removed = {node for node, selected in zip(nodes, result["z"]) if selected} 
 
 
-    x_sel = result["x"]
     interdicted_idxs = {inf_edges[k] for k, sel in enumerate(result["x"]) if sel}
     edge_rem  = [edges[i] for i in interdicted_idxs]
     edge_remaining = [edges[i] for i in range(len(edges)) if i not in interdicted_idxs]
@@ -124,9 +125,8 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
 
 
 if __name__=="__main__":
-    displ=0
+    displ=2
     sovl=["gurobi","cbc","highs","coinbc","coin-bc"]
     for solver in sovl:
         print(solver)
         interdiction_minizinc(interdiction_type="edge",solver_name=solver,displ=displ)
-

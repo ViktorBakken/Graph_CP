@@ -16,13 +16,15 @@ array[E_inf] of int: idx_inf;  % index of infected edges
 array[V] of int: b; % the vector of start node and ending node
 
 set of int: S={s | s in index_set(b) where b[s]=1};
+set of int: E_can = {idx_inf[k] | k in E_inf};
+set of int: E_rest = E diff E_can;
 
 % Decsion Variables
 int: M = n;  % upperbound of beta
 
 array[V] of var -2*M..M: pi; 
 array[E] of var 0..M: beta; 
-array[E_inf] of var 0..M: w;
+array[E] of var 0..M: w;
 array[E_inf] of var 0..1: x; % interdiction vector
 array[0..0] of var 0..0:z; % Does Nothing 
 
@@ -30,7 +32,7 @@ array[0..0] of var 0..0:z; % Does Nothing
 constraint forall(s in S)(pi[s]=0);
 
 % ensure interdiction stays within budget
-constraint sum(x) <= K;  
+constraint sum(x) = K;  
 
 %T^T*pi - beta <= c    <=>  
 %pi_i - pi_j - beta_ij <= c_ij
@@ -38,8 +40,11 @@ constraint forall(e in E)(
   (pi[i[e]] - pi[j[e]] - beta[e] <= c[e])
 );
 
-%beta_ij - M_ij*x_ij <= w_ij
-constraint forall(k in E_inf)(beta[idx_inf[k]] - M*x[k] <= w[k]);
+% Non-candidate edges are never interdicted, so they still pay the full beta cost.
+constraint forall(e in E_rest)(beta[e] <= w[e]);
+
+% Candidate edges can discount their beta term when selected.
+constraint forall(k in E_inf)(beta[idx_inf[k]] - M*x[k] <= w[idx_inf[k]]);
 
 % Objective
 var int: obj= sum(v in V)(b[v] * pi[v]) - sum(w);
