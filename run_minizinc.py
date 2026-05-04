@@ -75,7 +75,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     start_mzn= time.time()
     rand_seed=np.random.randint(0,100)
     result = instance.solve(random_seed=rand_seed, processes=4,free_search=True)
-    print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
+    # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
     # print(time.time() - start_mzn)
     # print(result["x"]) #if displ:
     # print(result,", bounds:[",min(result["pi"]),",",max(result["pi"]),"]")
@@ -85,7 +85,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     node_removed = {node for node, selected in zip(nodes, result["z"]) if selected} 
 
 
-    interdicted_idxs = {inf_edges[k] for k, sel in enumerate(result["x"]) if sel}
+    interdicted_idxs = {k for k, sel in enumerate(result["x"]) if sel} #inf_edges[k]
     edge_rem  = [edges[i] for i in interdicted_idxs]
     edge_remaining = [edges[i] for i in range(len(edges)) if i not in interdicted_idxs]
 
@@ -114,11 +114,11 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     # if interdiction_type=="node":print("Selected nodes to remove:",node_removed)
 
     if displ>=2:
-        layout=show(n,edges,[nodes, S,{},T],layout=layout)
+        layout=show(n,edges,[nodes, S,T],layout=layout)
         if interdiction_type=="edge":
-            show(n,edge_remaining,[nodes, S,{},T],layout=layout)
+            show(n,edge_remaining,[nodes, S,T],layout=layout)
         else:
-            show(n,edge_remaining,[nodes, S,{},T],layout=layout)
+            show(n,edge_remaining,[nodes, S,T],layout=layout)
 
 
     return edge_remaining, node_removed
@@ -126,7 +126,7 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
 
 if __name__=="__main__":
     displ=2
-    sovl=["gurobi","cbc","highs","coinbc","coin-bc"]
+    sovl=["cplex","cbc","highs","coinbc","coin-bc"]
     for solver in sovl:
         print(solver)
         interdiction_minizinc(interdiction_type="edge",solver_name=solver,displ=displ)

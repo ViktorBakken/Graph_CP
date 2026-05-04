@@ -93,23 +93,23 @@ def analyse_graph(n,edges):
     avg_degree = sum(d for _, d in G.degree()) / n
     print(avg_degree)
 
-    betweenness = nx.current_flow_betweenness_centrality(G)
-    max=(0,0)
-    for n in sorted(G.nodes()):
-        t= betweenness[n]
-        if max[1]< t:
-            max=(n,t)
-        # print(n,": ",t)
-    print("current flow betweenness:",max)
+    # betweenness = nx.current_flow_betweenness_centrality(G)
+    # max=(0,0)
+    # for n in sorted(G.nodes()):
+    #     t= betweenness[n]
+    #     if max[1]< t:
+    #         max=(n,t)
+    #     # print(n,": ",t)
+    # print("current flow betweenness:",max)
 
-    betweenness = nx.betweenness_centrality(G)
-    max=(0,0)
-    for n in sorted(G.nodes()):
-        t= betweenness[n]
-        if max[1]< t:
-            max=(n,t)
-        # print(n,": ",t)
-    print("Shortest path:",max)
+    # betweenness = nx.betweenness_centrality(G)
+    # max=(0,0)
+    # for n in sorted(G.nodes()):
+    #     t= betweenness[n]
+    #     if max[1]< t:
+    #         max=(n,t)
+    #     # print(n,": ",t)
+    # print("Shortest path:",max)
 
     betweenness = nx.eigenvector_centrality(G,max_iter=1000)
     max=(0,0)
@@ -120,24 +120,24 @@ def analyse_graph(n,edges):
         # print(n,": ",t)
     print("Eigenvector:",max)
 
-    betweenness = nx.current_flow_closeness_centrality(G)
-    max=(0,0)
-    for n in sorted(G.nodes()):
-        t= betweenness[n]
-        if max[1]< t:
-            max=(n,t)
-        # print(n,": ",t)
-    print("current flow closeness:",max)
+    # betweenness = nx.current_flow_closeness_centrality(G)
+    # max=(0,0)
+    # for n in sorted(G.nodes()):
+    #     t= betweenness[n]
+    #     if max[1]< t:
+    #         max=(n,t)
+    #     # print(n,": ",t)
+    # print("current flow closeness:",max)
 
 
-    betweenness = nx.closeness_centrality(G)
-    max=(0,0)
-    for n in sorted(G.nodes()):
-        t= betweenness[n]
-        if max[1]< t:
-            max=(n,t)
-        # print(n,": ",t)
-    print("closeness:",max)
+    # betweenness = nx.closeness_centrality(G)
+    # max=(0,0)
+    # for n in sorted(G.nodes()):
+    #     t= betweenness[n]
+    #     if max[1]< t:
+    #         max=(n,t)
+    #     # print(n,": ",t)
+    # print("closeness:",max)
 
 if __name__=="__main__":
     n=100
