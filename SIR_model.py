@@ -251,7 +251,8 @@ if not Run_single:
                                     if(len(risk_edges)>b):
                                         risk_edge_list=list(risk_edges)
                                         np.random.shuffle(risk_edge_list)
-                                        rem_edges= risk_edge_list[:b]
+                                        new_edges= risk_edge_list[b:]
+                                        rem_edges.clear()
                                     else:
                                         rem_edges=risk_edges.copy()
                                         
@@ -277,6 +278,7 @@ if not Run_single:
                                 if (j,i) in new_edges:
                                     new_edges.remove((j,i))
                             rem_edges.clear()
+                            
                             for _ in range(repr):
                                 # if verbose>=1 and interdiction_type!="edge mzn":show(n,new_edges,sets,layout);print("after")
                                 _, _ ,infected_over_time,_=cascade(t=t,n=n,spread=spread,graph_edges=new_edges,init_infected=new_infected, T_set=T,
