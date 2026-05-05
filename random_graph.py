@@ -72,11 +72,10 @@ def determine_T(edges, sets):
     return T
 
 def determine_k_dangerous_edges(edges, risk_edges,sets,budget):
-    healthyEdges=[]
-    if sets[2]==set():
-        healthyEdges=filter_edges(sets[0],edges)
-    else:
-        healthyEdges=filter_edges(set.union(sets[0],set(sets[3] - sets[1])),edges)
+    healthy_nodes=set(sets[0])
+    if len(sets)>3:
+        healthy_nodes.update(set(sets[3]) - set(sets[1]))
+    healthyEdges=filter_edges(healthy_nodes,edges)
     high_risk_edges=[]
     if len(healthyEdges)>0:
         G=nx.Graph(healthyEdges)

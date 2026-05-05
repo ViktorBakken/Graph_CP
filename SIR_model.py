@@ -19,9 +19,9 @@ budget=10 # The interdiction budget
 intervention_step={4} # The steps in the simulation where interdiction occur
 early_stop=(True,10)
 time_range=50 # The number of simulation steps
-repr= 100
+repr= 30
 solver="cplex"
-interdiction_types=["edge mzn","edge","semi edge"]#
+interdiction_types=["edge","semi edge","edge mzn"]#
 # interdiction_type="semi edge" # Naive interdiction model, node or edge or edge mzn or semi edge
 verbose=0 # Should the simulation display each step
 infected_nodes= {0} # Which nodes are infected at start
@@ -208,7 +208,6 @@ if not Run_single:
             b_30_avg=[]
             
             interdiction_type=interdict
-            print("run ", run+1)
 
             if Double_trouble:
                 early_stop=(True,run+5)
@@ -220,7 +219,7 @@ if not Run_single:
 
             repeat = repr if Double_trouble or new_start else 1
             for rep in range(repeat):
-                #print("rep ", rep+1)
+                # print("rep ", rep+1)
 
                 # print(infected_nodes)
                 data_average=[]
@@ -229,6 +228,7 @@ if not Run_single:
                 # if verbose>=2:show(n,edges,sets,layout)
                 budget=count
                 print(budget)
+                rem_edges=set()
                 for b in range(count+1):
                     print("\nBUDGET:", b)
                     data=[]
@@ -238,72 +238,58 @@ if not Run_single:
                     for step in updated_intervention_steps:
                         if verbose>=1 and interdiction_type!="edge mzn":show(n,edges,sets,layout); print("before")
 
-                        
-                        
-                        match interdiction_type:
-                            case "edge mzn":
-                                T=determine_T(edges,sets)
-                                T=set(T)-set(new_infected)
-                                new_edges,_=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=b,infected_nodes=new_infected, #infected_edges=risk_edges,
-                                                                  critical_nodes=T, graph_edges=edges,interdiction_type="edge", displ=verbose)
-                                
-                            case "edge" :
-                                if(len(risk_edges)>b):
-                                    np.random.shuffle(risk_edges)
-                                    rem_edges= risk_edges[:b]
-                                else:
-                                    rem_edges=risk_edges.copy()
-                                    
-                                # Remove the selected edges
-                                for edge in rem_edges:
-                                    (i,j)=edge
-                                    new_edges.remove((i,j))
-                                    new_edges.remove((j,i))
-                                    
-                            case "semi edge":                                       
-                                if(len(risk_edges)>b):
-                                    rem_edges= determine_k_dangerous_edges(edges,risk_edges,sets,b)
-                                else:
-                                    rem_edges=risk_edges.copy()
-                                
-                                # Remove the selected edges
-                                for edge in rem_edges:
-                                    (i,j)=edge
-                                    new_edges.remove((i,j))
-                                    new_edges.remove((j,i))
-
-                        if verbose>=1 and interdiction_type!="edge mzn":show(n,new_edges,sets,layout);print("after")
-            
                         for _ in range(repr):
-                            _, _ ,infected_over_time,_=cascade(t=t,n=n,spread=spread,graph_edges=new_edges,init_infected=new_infected, T_set=T,
-                                                        displ=verbose,layout=layout)
-                            data.append(infected_over_time)
+                            match interdiction_type:
+                            
+                                case "edge mzn":
+                                    T=determine_T(edges,sets)
+                                    T=set(T)-set(new_infected)
+                                    new_edges,_=interdiction_minizinc(solver_name=solver,num_nodes=n,budget=b,infected_nodes=new_infected, #infected_edges=risk_edges,
+                                                                    critical_nodes=T, graph_edges=edges,interdiction_type="edge", displ=verbose)
+                                    
+                                case "edge" :
+                                    if(len(risk_edges)>b):
+                                        risk_edge_list=list(risk_edges)
+                                        np.random.shuffle(risk_edge_list)
+                                        rem_edges= risk_edge_list[:b]
+                                    else:
+                                        rem_edges=risk_edges.copy()
+                                        
+                                    # Remove the selected edges
+                                    for edge in rem_edges:
+                                        (i,j)=edge
+                                        if (i,j) in new_edges:
+                                            new_edges.remove((i,j))
+                                        if (j,i) in new_edges:
+                                            new_edges.remove((j,i))
+                                        
+                                case "semi edge":                                       
+                                    if(len(risk_edges)>b):
+                                        rem_edges= determine_k_dangerous_edges(edges,risk_edges,sets,b)
+                                    else:
+                                        rem_edges=risk_edges.copy()
+                                    
+                            # Remove the selected edges
+                            for edge in rem_edges:
+                                (i,j)=edge
+                                if (i,j) in new_edges:
+                                    new_edges.remove((i,j))
+                                if (j,i) in new_edges:
+                                    new_edges.remove((j,i))
+                            rem_edges.clear()
+                            for _ in range(repr):
+                                # if verbose>=1 and interdiction_type!="edge mzn":show(n,new_edges,sets,layout);print("after")
+                                _, _ ,infected_over_time,_=cascade(t=t,n=n,spread=spread,graph_edges=new_edges,init_infected=new_infected, T_set=T,
+                                                            displ=verbose,layout=layout)
+                                data.append(infected_over_time)
 
                     
-                    #Determine the average of the runs and store the 
-                    means_over_run=np.mean(data,axis=0)
-                    data_average.append([*start,*means_over_run])              
-                
-                    
-                 # Pad remaining budgets with the last result (fully quarantined, no change)
-                last = data_average[-1]
-                data_average.extend([last] * (budget - count))  # fills up to budget+1 rows
-                # ADD THIS: enforce fixed row count AND fixed row length
-                target_rows = budget + 1
-                target_cols = time_range  # your fixed time axis
-                # Truncate or pad rows
-                data_average = data_average[:target_rows]
-                while len(data_average) < target_rows:
-                    data_average.append(data_average[-1])
-
-                # Truncate or pad each row to fixed length
-                data_average = [
-                    (row + [row[-1]] * target_cols)[:target_cols]
-                    for row in data_average
-                ]
-                data_average=np.array(data_average)
+                            #Determine the average of the runs and store the 
+                            means_over_run=np.mean(data,axis=0)
+                            data_average.append([*start,*means_over_run])              
                 
                 #--- Stats ------------------------------------
+                data_average=np.array(data_average)
                 hm.append(data_average)
                 num_infected = data_average[:,-1]
                 reduction=1-num_infected/num_infected[0]

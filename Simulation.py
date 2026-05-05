@@ -20,8 +20,8 @@ def cascade(t=4, n=100,spread=0.2,graph_edges=None, init_infected=None,displ=0, 
 
 
     suceptible={i for i in range(n)}
-    for inf in infected:
-        suceptible.remove(inf)
+    # for inf in infected:
+    #     suceptible.remove(inf)
     T=set()
     if T_set!=set():
         T=T_set.copy()
@@ -54,8 +54,8 @@ def cascade(t=4, n=100,spread=0.2,graph_edges=None, init_infected=None,displ=0, 
                 (i,j)=edge
                 if i in infected and j in suceptible :
                     risk_edges.add(edge)
-                if i in infected and j in infected :
-                    removed.add(edge)
+                # if i in infected and j in infected :
+                #     removed.add(edge)
             
             if len(removed)>0:
                 for edge in removed:

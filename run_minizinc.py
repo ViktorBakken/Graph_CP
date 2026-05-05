@@ -72,9 +72,10 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     instance["inf"] = len(inf_edges)
 
     # Solve
-    start_mzn= time.time()
+    # start_mzn= time.time()
     rand_seed=np.random.randint(0,100)
-    result = instance.solve(random_seed=rand_seed, processes=4,free_search=True)
+
+    result = instance.solve(random_seed=rand_seed, processes=1)
     # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
     # print(time.time() - start_mzn)
     # print(result["x"]) #if displ:
@@ -82,10 +83,10 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
     # if result.status=="UNBOUNDED":
     #     print("\n\n\n\n\nHIHIHIHIHIHI\n\n\n\n\n")
 
-    node_removed = {node for node, selected in zip(nodes, result["z"]) if selected} 
+    node_removed = {node for node, selected in zip(nodes, result["z"]) if selected} if interdiction_type=="node" else set()
 
 
-    interdicted_idxs = {k for k, sel in enumerate(result["x"]) if sel} #inf_edges[k]
+    interdicted_idxs = {edge_idx for edge_idx, sel in enumerate(result["x"]) if sel}
     edge_rem  = [edges[i] for i in interdicted_idxs]
     edge_remaining = [edges[i] for i in range(len(edges)) if i not in interdicted_idxs]
 
