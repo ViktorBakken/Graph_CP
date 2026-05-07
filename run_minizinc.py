@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_edges=None, critical_nodes=None,graph_edges=None, interdiction_type="edge",solver_name="highs", displ=0,layout=None):
+def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_edges=None, critical_nodes=None,graph_edges=None, interdiction_type="edge",solver_name="highs", displ=0,layout=None, seed=42):
     k=budget
     n=num_nodes
+    
     if infected_nodes==None:
         #15
         # S={11,5,6,7}
@@ -73,16 +74,14 @@ def interdiction_minizinc(num_nodes=100,budget=4,infected_nodes=None,infected_ed
 
     # Solve
     # start_mzn= time.time()
-    rand_seed=np.random.randint(0,100)
 
-    result = instance.solve(random_seed=rand_seed, processes=1)
+    result = instance.solve(random_seed=seed, processes=1)
     # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
     # print(time.time() - start_mzn)
     # print(result["x"]) #if displ:
     # print(result,", bounds:[",min(result["pi"]),",",max(result["pi"]),"]")
     # if result.status=="UNBOUNDED":
     #     print("\n\n\n\n\nHIHIHIHIHIHI\n\n\n\n\n")
-
     node_removed = {node for node, selected in zip(nodes, result["z"]) if selected} if interdiction_type=="node" else set()
 
 
@@ -130,4 +129,4 @@ if __name__=="__main__":
     sovl=["cplex","cbc","highs","coinbc","coin-bc"]
     for solver in sovl:
         print(solver)
-        interdiction_minizinc(interdiction_type="edge",solver_name=solver,displ=displ)
+        interdiction_minizinc(interdiction_type="edge",solver_name=solver,displ=displ, seed=np.random.randint(0,2**32-1))

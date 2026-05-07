@@ -98,8 +98,7 @@ def analyse_graph(n,edges):
         t= betweenness[n]
         if max[1]< t:
             max=(n,t)
-        # print(n,": ",t)
-    print("Eigenvector:",max)
+    return(max[0])
 
 
 if __name__=="__main__":
