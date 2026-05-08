@@ -22,7 +22,7 @@ set of int: E_rest = E diff E_can;
 int: K_eff = min(K, card(E_can));
 
 % Decsion Variables
-int: M = sum(c);  % upperbound of beta
+int: M = m;  % upperbound of beta
 
 array[V] of var -2*M..M: pi; 
 array[E] of var 0..M: beta; 

@@ -1,24 +1,20 @@
 from random_graph import (
-    generate_graph,
     show,
     determine_T,
     analyse_graph,
     determine_k_dangerous_edges,
 )
+from Generate_cost_edges import test
 from run_minizinc import interdiction_minizinc
 from Simulation import cascade
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-
-# import seaborn as sns
-from tabulate import tabulate
 import ast
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---Simulation parameters------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
-n = 500  # Number of nodes in graph
+n = 1000  # Number of nodes in graph
 spread = 0.2  # The chance an infection will spread through an edge
 
 early_stop = (True, 10)
@@ -35,7 +31,7 @@ verbose = 0  # Should the simulation display each step
 
 
 def Determine_Start_Infection(
-    n, spread, early_stop, infected_nodes, edges, rng, verbose
+    n, spread, early_stop, infected_nodes, edges, rng, verbose,layout
 ):
 
     new_edges, sets, head_start_infected, end_time_step = cascade(
@@ -47,6 +43,7 @@ def Determine_Start_Infection(
         verbose_displ=verbose,
         early_stop=early_stop,
         rng=rng,
+        layout=layout
     )
 
     return new_edges, end_time_step, sets, head_start_infected
@@ -111,7 +108,7 @@ def Set_Up_Graph(edges, infected_set, suceptible_set):
     risk_edges = set()
     new_edges = list(edges.copy())
     for edge in edges:
-        i, j = edge
+        i, j,_ = edge
         if i in infected_set and j in infected_set:
             new_edges.remove(edge)
         if i in infected_set and j in suceptible_set:
@@ -124,11 +121,11 @@ def Set_Up_Graph(edges, infected_set, suceptible_set):
 def Remove_interdicted_edges(rem_edges, new_edges):
     if len(rem_edges) > 0:
         for edge in rem_edges:
-            i, j = edge
-            if (i, j) in new_edges:
-                new_edges.remove((i, j))
-            if (j, i) in new_edges:
-                new_edges.remove((j, i))
+            i, j, c= edge
+            if (i, j, c) in new_edges:
+                new_edges.remove((i, j, c))
+            if (j, i, c) in new_edges:
+                new_edges.remove((j, i, c))
         rem_edges.clear()
     return new_edges
 
@@ -145,6 +142,7 @@ def Interdict(
     interdiction_type,
     b,
     rng,
+    layout,
 ):
     T = set()
     rem_edges = []
@@ -161,6 +159,7 @@ def Interdict(
                 graph_edges=edges,
                 interdiction_type="edge",
                 displ=verbose,
+                layout=layout,
                 seed=rng.integers(0, seed_selection),
             )
 
@@ -190,6 +189,7 @@ def pad_budget(row, target_len):
         local_row.append(local_row[-1])
     return local_row
 
+
 # Select edges
 edges = []
 with open("edges", "r") as f:
@@ -208,17 +208,18 @@ layout = None
 results = {interdiction_type: [] for interdiction_type in interdiction_types}
 seeds = np.random.SeedSequence(42)
 infected_percentages = []
-infected_nodes={analyse_graph(n, edges)}
+infected_nodes = {analyse_graph(n, edges)}
 print(f"Infected nodes = {infected_nodes}")
+edges = test(edges, np.random.default_rng(seeds.spawn(1)[0]))
+
 
 # --- Run multiple times with new start infection ----------------------------------
 for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
-    start_seed, time_seed, interdict_seed, infection_simulaiton_seed = run_seed.spawn(4)
+    start_seed, time_seed, interdict_seed, infection_simulaiton_seed = (
+        run_seed.spawn(4)
+    )
 
-    # head_start = min(intervention_step)
-    # updated_intervention_steps = {i - head_start for i in intervention_step}
-
-    if verbose >= 3:
+    if verbose >= 1:
         layout = show(n, edges, [{n for n in range(n)}, {}, {}, {}])
 
     # --- Common start before interdiction ----------------------------------------
@@ -230,6 +231,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         edges=edges,
         verbose=verbose,
         rng=np.random.default_rng(start_seed),
+        layout=layout
     )
 
     infected_set = set(states[1])
@@ -238,7 +240,6 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
     infected_percentages.append(infected_percentage)
     start_edges, risk_edges = Set_Up_Graph(start_edges, infected_set, suceptible_set)
     budget_max = len(risk_edges)
-
 
     # --- Determine time until complete infection ----------------------------------------
     t = Determine_Infection_Time(
@@ -282,6 +283,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                 interdiction_type=interdiction_type,
                 b=b,
                 rng=interdict_rng,
+                layout=layout,
             )
 
             data_average.append(
