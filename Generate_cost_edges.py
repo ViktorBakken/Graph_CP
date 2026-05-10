@@ -15,5 +15,5 @@ def test(edges,rng):
     return new_edges
 
 def generate_cost(rng):
-    # return 1
-    return(int(rng.integers(1,100)))
+    return 1
+    # return(int(rng.integers(1,101)))

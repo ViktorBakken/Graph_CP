@@ -1,5 +1,6 @@
 from random_graph import (
     show,
+    show_weighted,
     determine_T,
     analyse_graph,
     determine_k_dangerous_edges,
@@ -14,16 +15,16 @@ import ast
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---Simulation parameters------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
-n = 1000  # Number of nodes in graph
+n = 500  # Number of nodes in graph
 spread = 0.2  # The chance an infection will spread through an edge
 
 early_stop = (True, 10)
-seed_selection = 2**32 - 1
+seed_selection = 2**32
 
 repr = 5
 runs = 25
 
-solver = "gurobi"
+solver = "cplex"
 interdiction_types = ["edge", "semi edge", "edge mzn"]  #
 
 verbose = 0  # Should the simulation display each step
@@ -220,7 +221,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
     )
 
     if verbose >= 1:
-        layout = show(n, edges, [{n for n in range(n)}, {}, {}, {}])
+        layout = show_weighted(n, edges, [{n for n in range(n)}, {}, {}, {}])
 
     # --- Common start before interdiction ----------------------------------------
     start_edges, head_start, states, common_start = Determine_Start_Infection(
@@ -262,45 +263,48 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
     seed_matrix = np.random.default_rng(infection_simulaiton_seed).integers(
         0, seed_selection, size=(budget_max + 1, repr)
     )
+    interdict_rng = np.random.default_rng(interdict_seed)
 
     # --- Evaluate each type of interdiction -------------------------------
     for interdiction_type in interdiction_types:
-        interdict_rng = np.random.default_rng(interdict_seed)
 
         data_average = []
         for b in range(budget_max + 1):
+            # data=[]
+            # for _ in range(repr):
             new_edges = start_edges.copy() if interdiction_type != "edge mzn" else []
 
-            T, new_edges = Interdict(
-                n=n,
-                solver=solver,
-                verbose=verbose,
-                edges=start_edges,
-                new_edges=new_edges,
-                states=states,
-                infected_nodes=infected_set,
-                risk_edges=risk_edges,
-                interdiction_type=interdiction_type,
-                b=b,
-                rng=interdict_rng,
-                layout=layout,
+            T , new_edges = Interdict(
+                    n=n,
+                    solver=solver,
+                    verbose=verbose,
+                    edges=start_edges,
+                    new_edges=new_edges,
+                    states=states,
+                    infected_nodes=infected_set,
+                    risk_edges=risk_edges,
+                    interdiction_type=interdiction_type,
+                    b=b,
+                    rng=interdict_rng,
+                    layout=layout,
             )
 
             data_average.append(
-                Simulate_Infection(
-                    n=n,
-                    infection_spread=spread,
-                    b=b,
-                    verbose=verbose,
-                    layout=layout,
-                    T=T,
-                    infected_nodes=infected_set,
-                    common_start=common_start,
-                    remaining_time=t,
-                    graph_edges=new_edges,
-                    seed_matrix=seed_matrix,
-                )
+                    Simulate_Infection(
+                        n=n,
+                        infection_spread=spread,
+                        b=b,
+                        verbose=verbose,
+                        layout=layout,
+                        T=T,
+                        infected_nodes=infected_set,
+                        common_start=common_start,
+                        remaining_time=t,
+                        graph_edges=new_edges,
+                        seed_matrix=seed_matrix,
+                    )
             )
+            # data_average.append(np.mean(data,axis=1))
         Person_time = np.array(np.sum(data_average, axis=1), dtype=float)
         score = 1 - Person_time / Person_time[0]
 

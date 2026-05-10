@@ -1,4 +1,4 @@
-from random_graph import show, determine_k_dangerous_edges, determine_T
+from random_graph import show, show_weighted, determine_k_dangerous_edges, determine_T
 from run_minizinc import interdiction_minizinc
 import numpy as np
 import time
@@ -44,8 +44,8 @@ def cascade(
             simulation_time = time
             break
         elif len(risk_edges) > 0 or time == 0:
-            if verbose_displ >= 3:
-                show(n=n, edges=edges, sets=sets, layout=layout)  # ; print("display")
+            if verbose_displ >= 2:
+                show_weighted(n=n, edges=edges, sets=sets, layout=layout)  # ; print("display")
 
             # Determine which edges are adjacent to infected nodes
             risk_edges.clear()
@@ -57,7 +57,9 @@ def cascade(
             for inf_edge in risk_edges:
                 i, j,c = inf_edge
                 if j in suceptible:
-                    if rng.uniform(0, 1) >= c//100:
+                    rand=rng.uniform(0, 1)
+                    # print("rand=",rand, "cost=",c/100)
+                    if rand >= c/100:
                         infected.add(j)
                         suceptible.discard(j)
 
