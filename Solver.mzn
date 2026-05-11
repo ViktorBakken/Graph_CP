@@ -31,11 +31,10 @@ array[E] of var 0..1: x; % interdiction vector
 array[0..0] of var 0..0:z; % Does Nothing 
 
 % Constraints
-% constraint forall(e in E)(0 <= w[e]);
 constraint forall(s in S)(pi[s]=0);
 
 % Interdicted edges are connected to infected nodes
-constraint sum(e in E_can)(x[e]) = K;  % spend available budget on candidate edges
+constraint sum(e in E_can)(x[e]) = K;  
 constraint forall(e in E_rest)(x[e] = 0);
 
 %T^T*pi - beta <= c    

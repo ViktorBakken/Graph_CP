@@ -55,7 +55,7 @@ def forest_fire_graph(n, p_f=0.3, p_b=0.25, seed=42):
     return G
 
 
-n=1000
+n=500
 p_f=0.3
 p_b=0.25
 # G_ff = forest_fire_graph(n=n, p_f=p_f, p_b=p_b)

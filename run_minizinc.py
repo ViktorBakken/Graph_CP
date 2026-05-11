@@ -34,10 +34,10 @@ def interdiction_minizinc(
     if graph_edges == None:
         # n=15
         edges = [
-            (12, 7,4),
-            (7, 12,4),
-            (5, 4,90),
-            (4, 5,90),
+            (12, 7, 4),
+            (7, 12, 4),
+            (5, 4, 90),
+            (4, 5, 90),
             (4, 6, 56),
             (6, 4, 56),
             (8, 0, 34),
@@ -86,7 +86,7 @@ def interdiction_minizinc(
 
         # Search
     inf_edges = (
-        [idx for idx, (i, j,_) in enumerate(edges) if i in S and j not in S]
+        [idx for idx, (i, j, _) in enumerate(edges) if i in S and j not in S]
         if infected_edges == None
         else [edges.index(edge) for edge in infected_edges]
     )
@@ -125,7 +125,6 @@ def interdiction_minizinc(
     else:
         T = critical_nodes.copy()
     nodes = [i for i in range(n)]
-
 
     tail, head, cost = map(list, zip(*edges))
 
@@ -194,9 +193,11 @@ def interdiction_minizinc(
                 edge_remaining.remove((j, i, c))
 
     # if displ:
-    # if interdiction_type == "edge":
+    # if interdiction_type == "edge" and (budget == 19 or budget == 20):
     #     print(
-    #         "Selected edges to remove:",
+    #         "budget: ",
+    #         k,
+    #         "\nSelected edges to remove:",
     #         edge_rem,
     #         "\nMax removed?",
     #         len(edge_rem) == k,
@@ -204,7 +205,7 @@ def interdiction_minizinc(
     #     )
     # if interdiction_type=="node":print("Selected nodes to remove:",node_removed)
 
-    if displ >= 1:
+    if displ == 2:
         layout = show_weighted(n, edges, [nodes, S, T], layout=layout)
         if interdiction_type == "edge":
             show_weighted(n, edge_remaining, [nodes, S, T], layout=layout)

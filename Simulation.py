@@ -10,7 +10,6 @@ import seaborn as sns
 def cascade(
     simulation_time,
     n,
-    infection_spread,
     graph_edges,
     init_infected,
     layout,
@@ -44,7 +43,7 @@ def cascade(
             simulation_time = time
             break
         elif len(risk_edges) > 0 or time == 0:
-            if verbose_displ >= 2:
+            if verbose_displ == 3:
                 show_weighted(n=n, edges=edges, sets=sets, layout=layout)  # ; print("display")
 
             # Determine which edges are adjacent to infected nodes
@@ -58,7 +57,6 @@ def cascade(
                 i, j,c = inf_edge
                 if j in suceptible:
                     rand=rng.uniform(0, 1)
-                    # print("rand=",rand, "cost=",c/100)
                     if rand >= c/100:
                         infected.add(j)
                         suceptible.discard(j)

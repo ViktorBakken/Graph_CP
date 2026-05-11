@@ -15,7 +15,7 @@ import ast
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---Simulation parameters------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
-n = 500  # Number of nodes in graph
+n = 1000  # Number of nodes in graph
 spread = 0.2  # The chance an infection will spread through an edge
 
 early_stop = (True, 10)
@@ -24,30 +24,32 @@ seed_selection = 2**32
 repr = 5
 runs = 25
 
-solver = "cplex"
+solver = "gurobi"
 interdiction_types = ["edge", "semi edge", "edge mzn"]  #
 
-verbose = 0  # Should the simulation display each step
+verbose = 0  # Display settings
 # -------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 def Determine_Start_Infection(
     n, spread, early_stop, infected_nodes, edges, rng, verbose,layout
 ):
+    procent_infected=100
+    limit= early_stop[1]+3
+    while(procent_infected>limit):
+        new_edges, states, head_start_infected, end_time_step = cascade(
+            simulation_time=100,
+            n=n,
+            graph_edges=edges,
+            init_infected=infected_nodes,
+            verbose_displ=verbose,
+            early_stop=early_stop,
+            rng=rng,
+            layout=layout
+        )
+        procent_infected=len(states[1])/n*100
 
-    new_edges, sets, head_start_infected, end_time_step = cascade(
-        simulation_time=100,
-        n=n,
-        infection_spread=spread,
-        graph_edges=edges,
-        init_infected=infected_nodes,
-        verbose_displ=verbose,
-        early_stop=early_stop,
-        rng=rng,
-        layout=layout
-    )
-
-    return new_edges, end_time_step, sets, head_start_infected
+    return new_edges, end_time_step, states, head_start_infected
 
 
 def Determine_Infection_Time(
@@ -58,7 +60,6 @@ def Determine_Infection_Time(
         _, _, _, t_i = cascade(
             simulation_time=100,
             n=n,
-            infection_spread=infection_spread,
             graph_edges=edges,
             init_infected=infected_nodes,
             verbose_displ=verbose,
@@ -90,7 +91,6 @@ def Simulate_Infection(
         _, _, infected_over_time, _ = cascade(
             simulation_time=remaining_time,
             n=n,
-            infection_spread=infection_spread,
             graph_edges=graph_edges,
             init_infected=infected_nodes,
             T_set=T,
@@ -220,9 +220,6 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         run_seed.spawn(4)
     )
 
-    if verbose >= 1:
-        layout = show_weighted(n, edges, [{n for n in range(n)}, {}, {}, {}])
-
     # --- Common start before interdiction ----------------------------------------
     start_edges, head_start, states, common_start = Determine_Start_Infection(
         n=n,
@@ -234,6 +231,9 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         rng=np.random.default_rng(start_seed),
         layout=layout
     )
+
+    if verbose == 1:
+        layout = show_weighted(n, start_edges, states)
 
     infected_set = set(states[1])
     suceptible_set = set(states[0])
@@ -304,6 +304,8 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                         seed_matrix=seed_matrix,
                     )
             )
+            # if interdiction_type=="edge mzn":
+            #     if b==19 or b==20:print("\nb=",b,"\n", data_average[-1])
             # data_average.append(np.mean(data,axis=1))
         Person_time = np.array(np.sum(data_average, axis=1), dtype=float)
         score = 1 - Person_time / Person_time[0]
