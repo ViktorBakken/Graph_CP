@@ -18,13 +18,13 @@ import ast
 n = 1000  # Number of nodes in graph
 spread = 0.2  # The chance an infection will spread through an edge
 
-early_stop = (True, 10)
+early_stop = (True, 30)
 seed_selection = 2**32
 
-repr = 5
-runs = 25
+repr = 100
+runs = 100
 
-solver = "gurobi"
+solver = "cplex"
 interdiction_types = ["edge", "semi edge", "edge mzn"]  #
 
 verbose = 0  # Display settings
