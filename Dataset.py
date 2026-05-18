@@ -40,7 +40,7 @@ for edge in edge_pair :
     else:
         cost_1= G[i][j]["weight"]
         cost_2= G[j][i]["weight"]
-        if cost_1 < 6 and cost_2 < 6:
+        if cost_1 < 3 and cost_2 < 3:
             edges.remove((i,j,cost_1)) 
 
 # Tie
@@ -57,37 +57,50 @@ for i, j, c_1 in edges:
         seen.add((i, j))
         seen.add((j, i))
 
-G_test= nx.Graph()
+G_test = nx.Graph()
 G_test.add_weighted_edges_from(new_edges)
-# after G_test has been created
-remaining_nodes = sorted(G_test.nodes())
+
+largest_component = max(nx.connected_components(G_test), key=len)
+
+G_main = G_test.subgraph(largest_component).copy()
+
 node_map = {
     old_id: new_id
-    for new_id, old_id in enumerate(remaining_nodes)
+    for new_id, old_id in enumerate(sorted(G_main.nodes()))
 }
+
 renamed_edges = [
     (node_map[u], node_map[v], w)
-    for u, v, w in G_test.edges(data="weight")
+    for u, v, w in G_main.edges(data="weight")
 ]
-
-
 
 tie_bar=max({c for _,_,c in renamed_edges})
 print(tie_bar)
 final_edges=[]
 for i,j,c in renamed_edges:
-    final_edges.append((i,j,weight(c,tie_bar)))
+    if (i,j,c) not in final_edges:
+        final_edges.append((i,j,weight(c,tie_bar)))
+        final_edges.append((j,i,weight(c,tie_bar)))
+
+
 
 
 G_reindexed = nx.Graph()
 G_reindexed.add_weighted_edges_from(final_edges)
-
-print("num edges: ",len(G_reindexed.edges()), "num nodes: ",len(G_reindexed.nodes()))
-
+n=len(G_reindexed.nodes())
+m=len(final_edges)
+print("num edges: ",m, ", num nodes: ",n)
 
 edge_pair={ (i,j) for i, j, _ in final_edges}
 
-print(analyse_graph(n,edge_pair))
-show_weighted(len(list(G_reindexed.nodes)),final_edges)
+start=analyse_graph(n,edge_pair)
+print(start)
+print("Average cost=",sum(c for _,_,c in final_edges)/m)
+print("tie_bar",tie_bar)
 
-# print(final_edges)
+for i, j, c in final_edges:
+    if (j,i,c) not in final_edges:
+        print("WTF")
+
+# show_weighted(n,final_edges)
+print(final_edges)

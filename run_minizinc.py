@@ -8,7 +8,7 @@ import time
 
 
 def interdiction_minizinc(
-    num_nodes=30,
+    num_nodes=15,
     budget=2,
     infected_nodes=None,
     infected_edges=None,
@@ -86,15 +86,13 @@ def interdiction_minizinc(
 
         # Search
     inf_edges = (
-        [idx for idx, (i, j, _) in enumerate(edges) if i in S and j not in S]
-        if infected_edges == None
-        else [edges.index(edge) for edge in infected_edges]
+            [idx for idx, (i, j, _) in enumerate(edges) if i in S and j not in S]
+            if infected_edges == None
+            else [edges.index(edge) for edge in infected_edges]
     )
 
-    # print("inf_edges:",inf_edges,"\ninfected_edges:",[edges[idx] for idx in inf_edges])
-
     if interdiction_type == "edge" and (k <= 0 or len(inf_edges) == 0):
-        return edges.copy(), set()
+        return edges.copy()
 
     if critical_nodes == None:
         # 15
@@ -164,11 +162,7 @@ def interdiction_minizinc(
     # print(result,", bounds:[",min(result["pi"]),",",max(result["pi"]),"]")
     # if result.status=="UNBOUNDED":
     #     print("\n\n\n\n\nHIHIHIHIHIHI\n\n\n\n\n")
-    node_removed = (
-        {node for node, selected in zip(nodes, result["z"]) if selected}
-        if interdiction_type == "node"
-        else set()
-    )
+
 
     interdicted_idxs = {edge_idx for edge_idx, sel in enumerate(result["x"]) if sel}
     edge_rem = [edges[i] for i in interdicted_idxs]
@@ -184,16 +178,8 @@ def interdiction_minizinc(
             else:
                 print("overflow or bad edge selection")
 
-    if interdiction_type == "node":
-        edge_remaining = edges.copy()
-        for edge in edges:
-            i, j, c = edge
-            if i in node_removed and (i, j, c) in edge_remaining:
-                edge_remaining.remove((i, j, c))
-                edge_remaining.remove((j, i, c))
-
     # if displ:
-    # if interdiction_type == "edge" and (budget == 19 or budget == 20):
+    # if interdiction_type == "edge":
     #     print(
     #         "budget: ",
     #         k,
@@ -203,21 +189,19 @@ def interdiction_minizinc(
     #         len(edge_rem) == k,
     #         "\n",
     #     )
-    # if interdiction_type=="node":print("Selected nodes to remove:",node_removed)
+    
 
     if displ == 2:
         layout = show_weighted(n, edges, [nodes, S, T], layout=layout)
-        if interdiction_type == "edge":
-            show_weighted(n, edge_remaining, [nodes, S, T], layout=layout)
-        else:
-            show_weighted(n, edge_remaining, [nodes, S, T], layout=layout)
+        show_weighted(n, edge_remaining, [nodes, S, T], layout=layout)
 
-    return edge_remaining, node_removed
+
+    return edge_remaining
 
 
 if __name__ == "__main__":
-    displ = 2
-    sovl = ["gurobi", "cbc", "highs", "coinbc", "coin-bc"]  # "cplex"
+    displ = 0
+    sovl = ["cplex", "cbc", "highs", "coinbc", "coin-bc"]  # "cplex"
     for solver in sovl:
         print(solver)
         interdiction_minizinc(
