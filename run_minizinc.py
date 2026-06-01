@@ -174,10 +174,10 @@ def interdiction_minizinc(
 
     if interdiction_type == "edge":
         # print(edge_remaining)
-        for edge in edge_rem:
-            i, j, c = edge
-            if (j, i, c) in edge_remaining:
-                edge_remaining.remove((j, i, c))
+        for i, j, c in edge_rem:
+            c_2=[cc for jj,ii,cc in edges if jj==j and ii==i][0]
+            if (j, i, c_2) in edge_remaining:
+                edge_remaining.remove((j, i, c_2))
             else:
                 print("overflow or bad edge selection")
 

@@ -22,16 +22,16 @@ fixed=True
 lame=0.1
 use_lame=False
 
-early_stop = (True, 10)
+early_stop = (True, 30)
 seed_selection = 2**32
 
-repr = 50
-runs = 5
+repr = 100
+runs = 100
 
 solver = "gurobi"
 interdiction_types = ["edge", "semi edge", "edge mzn"]  #
 
-verbose = 0  # Display settings
+verbose = 0 # Display settings
 # -------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -56,6 +56,7 @@ def Determine_Start_Infection(
             
         )
         procent_infected=len(states[1])/n*100
+        
 
     return new_edges, end_time_step, states, head_start_infected
 
@@ -70,7 +71,7 @@ def Determine_Infection_Time(
             n=n,
             graph_edges=edges,
             init_infected=infected_nodes,
-            verbose_displ=verbose,
+            verbose_displ=0,
             layout=layout,
             early_stop=(True, 100),
             rng=rng,
@@ -79,8 +80,8 @@ def Determine_Infection_Time(
             fixed=fixed
         )
         t_avg.append(t_i)
-    t = np.mean(t_avg) // 1  # take the floor average
-    t = t.astype(int)
+    t = int(np.mean(t_avg))
+    # t = t.astype(int)
     return t
 
 
@@ -99,6 +100,7 @@ def Simulate_Infection(
     fixed
 ):
     data = []
+
     for seed in seed_matrix[b]:
         _, _, infected_over_time, _ = cascade(
             simulation_time=remaining_time,
@@ -136,12 +138,12 @@ def Set_Up_Graph(edges, infected_set, suceptible_set):
 
 def Remove_interdicted_edges(rem_edges, new_edges):
     if len(rem_edges) > 0:
-        for edge in rem_edges:
-            i, j, c= edge
+        for i, j, c in rem_edges:
+            c_2=[cc for jj,ii,cc in edges if jj==j and ii==i][0]
             if (i, j, c) in new_edges:
                 new_edges.remove((i, j, c))
-            if (j, i, c) in new_edges:
-                new_edges.remove((j, i, c))
+            if (j, i, c_2) in new_edges:
+                new_edges.remove((j, i, c_2))
         rem_edges.clear()
     return new_edges
 
@@ -236,11 +238,13 @@ if use_lame:
     lame_rng = np.random.default_rng(seeds.spawn(1)[0])
     lame_users = lame_rng.integers(0, n, nr_of_lame)
     lame_set = set(lame_users)
-
     edges = [
         (i, j, 0 if i in lame_set else c)
         for i, j, c in edges
     ]
+
+
+average_time=[]
 
 # --- Run multiple times with new start infection ----------------------------------
 for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
@@ -283,6 +287,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         rng=np.random.default_rng(time_seed),
         fixed=fixed,
     )
+    average_time.append(t)
 
     # --- Print initial graph stats ----------------------------------------
     print(f"Run {run_idx}/{runs}")
@@ -348,7 +353,7 @@ flatten_results = [
     rows for rows_per_method in results.values() for rows in rows_per_method
 ]
 max_budget = max(len(rows) for rows in flatten_results)
-
+print("t", np.mean(average_time))
 for interdiction_type in interdiction_types:
     padded_results = np.array(
         [pad_budget(row, max_budget) for row in results[interdiction_type]]
@@ -375,4 +380,5 @@ plt.title(
 )
 plt.grid(True, alpha=0.3)
 plt.legend()
-plt.show()
+# plt.show()
+plt.savefig(f"res/{int(spread*100)}Spread.png")

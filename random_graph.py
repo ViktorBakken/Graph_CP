@@ -18,13 +18,14 @@ def show_weighted(n, edges, sets=None, layout=None):
 
     # default state
     nx.set_node_attributes(G, {node: "S" for node in G.nodes()}, "state")
+    for i,_,_ in edges:
+        if i in sets[0]:
+            G.nodes[i]["state"] = "S"
+        if i in sets[1]:
+            G.nodes[i]["state"] = "I"
+        if i in sets[2]:
+            G.nodes[i]["state"] = "B"
 
-    for s in sets[0]:
-        G.nodes[s]["state"] = "S"
-    for i in sets[1]:
-        G.nodes[i]["state"] = "I"
-    for r in sets[2]:
-        G.nodes[r]["state"] = "B"
 
     if layout is None:
         layout = nx.spring_layout(G, seed=42)
@@ -57,12 +58,13 @@ def show(n, edges, sets=None, layout=None):
     # default state
     nx.set_node_attributes(G, {node: "S" for node in G.nodes()}, "state")
 
-    for s in sets[0]:
-        G.nodes[s]["state"] = "S"
-    for i in sets[1]:
-        G.nodes[i]["state"] = "I"
-    for r in sets[2]:
-        G.nodes[r]["state"] = "B"
+    for i,_,_ in edges:
+        if i in sets[0]:
+            G.nodes[i]["state"] = "S"
+        if i in sets[1]:
+            G.nodes[i]["state"] = "I"
+        if i in sets[2]:
+            G.nodes[i]["state"] = "B"
 
     if layout is None:
         layout = nx.spring_layout(G, seed=42)
@@ -134,16 +136,16 @@ def determine_k_dangerous_edges(edges, risk_edges, sets, budget):
     if len(sets) > 3:
         healthy_nodes.update(set(sets[3]) - set(sets[1]))
     healthyEdges = filter_edges(healthy_nodes, edges)
-    strength_involved_healthy_edges=[(i,j,101-c) for i,j,c in healthyEdges]
+    # strength_involved_healthy_edges=[(i,j,101-c) for i,j,c in healthyEdges]
     
     high_risk_edges = []
-    if len(strength_involved_healthy_edges) > 0:
+    if len(healthyEdges) > 0:
         G = nx.Graph()
-        G.add_weighted_edges_from(strength_involved_healthy_edges)
+        G.add_weighted_edges_from(healthyEdges)
         centrality = {}
         for component in nx.connected_components(G):
             H = G.subgraph(component)
-            c = nx.eigenvector_centrality(H, max_iter=5000, weight="weights")
+            c = nx.eigenvector_centrality(H, max_iter=5000)
             centrality.update(c)
         high_risk_edges = sorted(
             risk_edges, key=lambda e: centrality.get(e[1], 0), reverse=True
