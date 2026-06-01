@@ -14,8 +14,6 @@ def show_weighted(n, edges, sets=None, layout=None):
     colorStates = {"S": "green", "I": "red", "B": "yellow"}
 
     G = nx.Graph()
-    # G.add_nodes_from(range(n))
-    # G.add_edges_from(edges)
     G.add_weighted_edges_from(edges)
 
     # default state
@@ -54,8 +52,7 @@ def show(n, edges, sets=None, layout=None):
 
     colorStates = {"S": "green", "I": "red", "B": "yellow"}
 
-    G = nx.Graph()
-    G.add_edges_from(edges)
+    G = nx.Graph(edges)
 
     # default state
     nx.set_node_attributes(G, {node: "S" for node in G.nodes()}, "state")
@@ -110,13 +107,16 @@ def filter_edges(nodes, edges, mode=0):
     nodes_set = set(nodes)
     filtered_edges = []
     for edge in edges:
-        i, j, c = edge
+        i,j = edge[:2]
+        rest=edge[2:]
         if i in nodes_set and j in nodes_set and mode == 0:
-            filtered_edges.append((i, j, c))
-            filtered_edges.append((j, i, c))
+            filtered_edges.append((i, j, *rest))
+            filtered_edges.append((j, i, *rest))
         if i in nodes_set and j not in nodes_set and mode == 1:
-            filtered_edges.append((i, j, c))
+            filtered_edges.append((i, j, *rest))
     return filtered_edges
+
+
 
 
 def determine_T(edges, sets):

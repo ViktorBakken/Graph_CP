@@ -125,6 +125,8 @@ def interdiction_minizinc(
     nodes = [i for i in range(n)]
 
     tail, head, cost = map(list, zip(*edges))
+   
+
 
     b = [0] * n
     for i in range(n):
@@ -132,6 +134,7 @@ def interdiction_minizinc(
             b[i] = 1
         elif i in T:
             b[i] = -1
+
 
     # Load a solver
     solver = Solver.lookup(solver_name)
@@ -201,7 +204,7 @@ def interdiction_minizinc(
 
 if __name__ == "__main__":
     displ = 0
-    sovl = ["cplex", "cbc", "highs", "coinbc", "coin-bc"]  # "cplex"
+    sovl = ["gurobi", "cbc", "highs", "coinbc", "coin-bc"]  # "cplex"
     for solver in sovl:
         print(solver)
         interdiction_minizinc(

@@ -46,16 +46,16 @@ constraint forall(e in E)(
 %beta_ij - M_ij*x_ij <= w_ij
 constraint forall(e in E)(beta[e] - M*x[e] <= w[e]);
 
-
 % Objective
 var int: obj= sum(v in V)(b[v] * pi[v]) - sum(w);
 
+
 solve maximize obj;
 output [
-  "obj=", show(obj),"\n",
-  "pi=", show(pi), "\n",
-  "w=", show(w), "\n",
-  "beta=", show(beta), "\n",
-  % "x=", show(x), "\n",
-  "M=", show(M), "\n"
-  ]
+  show(obj),
+  "\nSelected vertex (from, to):\n(",
+  show([i[e] | e in index_set(x) where fix(x[e]) = 1]),
+  ", ", 
+  show([j[e] | e in index_set(x) where fix(x[e]) = 1]),
+  ")"
+];

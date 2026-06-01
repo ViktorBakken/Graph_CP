@@ -15,8 +15,10 @@ def cascade(
     layout,
     rng,
     max_tie,
+    spread_p,
     early_stop=(False, 0),
     T_set=set(),
+    fixed=False,
     verbose_displ=0,
 ):
     # Initialization
@@ -49,18 +51,26 @@ def cascade(
 
             # Determine which edges are adjacent to infected nodes
             risk_edges.clear()
-            # print(edges)
             for i, j ,c in edges:
                 if i in infected and j in suceptible:
                     risk_edges.add((i,j, c))
 
+            # Propagate infection
             for inf_edge in risk_edges:
                 i, j,c = inf_edge
                 if j in suceptible:
                     rand=rng.uniform(0, 1)
-                    if rand >= c/max_tie:
-                        infected.add(j)
-                        suceptible.discard(j)
+                    if fixed:
+                        if rand <= spread_p:
+                            infected.add(j)
+                            suceptible.discard(j)
+                    else:
+                        if rand >= c/max_tie:
+                            infected.add(j)
+                            suceptible.discard(j)
+                    # if rand >= c/max_tie:
+                    #     infected.add(j)
+                    #     suceptible.discard(j)
 
     return edges, list(sets), infected_over_time, simulation_time
 
