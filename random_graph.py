@@ -96,7 +96,7 @@ def generate_graph(
     # G=nx.erdos_renyi_graph(n,0.05,seed=seed)
 
     edges = list(G.edges())
-    edges= test(edges, np.random.default_rng(seed))
+    edges= test(n,edges, np.random.default_rng(seed))
     final_edges = edges.copy()
     for edge in edges:
         i, j, c = edge
@@ -154,15 +154,15 @@ def determine_k_dangerous_edges(edges, risk_edges, sets, budget):
 
 
 def analyse_graph(n, edges):
-
     G = nx.Graph(edges)
     avg_degree = sum(d for _, d in G.degree()) / n
     print("Average node degree: ", avg_degree)
 
-    betweenness = nx.eigenvector_centrality(G, max_iter=1000)
+    centrality = nx.eigenvector_centrality(G, max_iter=5000)
+    
     max = (0, 0)
     for n in sorted(G.nodes()):
-        t = betweenness[n]
+        t = centrality[n]
         if max[1] < t:
             max = (n, t)
     return max[0]

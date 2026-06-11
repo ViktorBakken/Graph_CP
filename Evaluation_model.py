@@ -17,16 +17,17 @@ import ast
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 max_tie= 99+1#205
 spread = 0.2  # The chance an infection will spread through an edge
-fixed=True
+fixed=False
 
 lame=0.1
 use_lame=False
 
-early_stop = (True, 30)
+
+early_stop = (True, 10)
 seed_selection = 2**32
 
-repr = 100
-runs = 100
+repr = 70
+runs = 70
 
 solver = "gurobi"
 interdiction_types = ["edge", "semi edge", "edge mzn"]  #
@@ -225,13 +226,16 @@ for edge in edges:
         n=int(i)
 n+=1
 
+# print(len(edges))
+# quit()
+
 layout = None
 results = {interdiction_type: [] for interdiction_type in interdiction_types}
 seeds = np.random.SeedSequence(42)
 infected_percentages = []
 infected_nodes = {analyse_graph(n, edges)}  
 print(f"Infected nodes = {infected_nodes}")
-edges = test(edges, np.random.default_rng(seeds.spawn(1)[0]))
+edges = test(n,edges, np.random.default_rng(seeds.spawn(1)[0]))
 
 if use_lame:
     nr_of_lame = int(n * lame)
@@ -354,6 +358,7 @@ flatten_results = [
 ]
 max_budget = max(len(rows) for rows in flatten_results)
 print("t", np.mean(average_time))
+plt.figure(figsize=(10, 6))
 for interdiction_type in interdiction_types:
     padded_results = np.array(
         [pad_budget(row, max_budget) for row in results[interdiction_type]]
@@ -380,5 +385,12 @@ plt.title(
 )
 plt.grid(True, alpha=0.3)
 plt.legend()
-# plt.show()
-plt.savefig(f"res/{int(spread*100)}Spread.png")
+
+if use_lame:
+    plt.savefig(f"lame/{n}_{int(lame*100)}Spread.png",dpi=1200,bbox_inches='tight')
+elif fixed:
+    plt.savefig(f"fixed/{n}_{int(spread*100)}Spread_{int(early_stop[1])}inf_.png",dpi=1200,bbox_inches='tight')
+else:
+    plt.savefig(f"res/{n}_{int(lame*100)}{int(spread*100)}Spread.png",dpi=1200,bbox_inches='tight')
+
+plt.show()

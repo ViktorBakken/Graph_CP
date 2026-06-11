@@ -26,7 +26,7 @@ def cascade(
     infected = set(init_infected).copy()
     suceptible = {i for i in range(n) if i not in infected}
     T = T_set.copy()
-    rng= rng if rng is None else np.random
+    rng = rng if rng is not None else np.random
 
     # -------------------------------
     # ---Spread model----------------
@@ -47,25 +47,27 @@ def cascade(
             break
         elif len(risk_edges) > 0 or time == 0:
             if verbose_displ == 3:
-                show_weighted(n=n, edges=edges, sets=sets, layout=layout)  # ; print("display")
+                show_weighted(
+                    n=n, edges=edges, sets=sets, layout=layout
+                )  # ; print("display")
 
             # Determine which edges are adjacent to infected nodes
             risk_edges.clear()
-            for i, j ,c in edges:
+            for i, j, c in edges:
                 if i in infected and j in suceptible:
-                    risk_edges.add((i,j, c))
+                    risk_edges.add((i, j, c))
 
             # Propagate infection
             for inf_edge in risk_edges:
-                i, j,c = inf_edge
+                i, j, c = inf_edge
                 if j in suceptible:
-                    rand=rng.uniform(0, 1)
+                    rand = rng.uniform(0, 1)
                     if fixed:
                         if rand <= spread_p:
                             infected.add(j)
                             suceptible.discard(j)
                     else:
-                        if rand >= c/max_tie:
+                        if rand >= c / max_tie:
                             infected.add(j)
                             suceptible.discard(j)
                     # if rand >= c/max_tie:
@@ -176,7 +178,6 @@ if __name__ == "__main__":
     #         b_90=b
 
     # print("b 50: ", b_50,"\nb 70: ", b_70,"\nb 90: ", b_90,)
-
 
     # ----------------------------------------------------------------------------
 
