@@ -57,7 +57,7 @@ for i, j, c_1 in edges:
         seen.add((i, j))
         seen.add((j, i))
 
-G_test = nx.Graph()
+G_test = nx.DiGraph()
 G_test.add_weighted_edges_from(new_edges)
 
 largest_component = max(nx.connected_components(G_test), key=len)
@@ -85,7 +85,7 @@ for i,j,c in renamed_edges:
 
 
 
-G_reindexed = nx.Graph()
+G_reindexed = nx.DiGraph()
 G_reindexed.add_weighted_edges_from(final_edges)
 n=len(G_reindexed.nodes())
 m=len(final_edges)

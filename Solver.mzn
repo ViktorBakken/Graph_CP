@@ -19,7 +19,6 @@ array[E_inf] of int: idx_inf;  % index of infected edges
 set of int: S={s | s in index_set(b) where b[s]=1};
 set of int: E_can = {idx_inf[k] | k in E_inf};
 set of int: E_rest = E diff E_can;
-int: K_eff = min(K, card(E_can));
 
 % Decsion Variables
 int: M = m;  % upperbound of beta

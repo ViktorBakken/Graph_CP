@@ -1,0 +1,11 @@
+Parsing graphs...
+Will run for n in [500, 1000]
+
+============================================================
+  n=500, early_stop=10%, runs=10, repr=20
+============================================================
+Average node degree:  6.88
+  Initial infected node: {23}
+  Run 1/10 | infected=12.2% | budget_max=113 | t=49
+  Run 2/10 | infected=11.4% | budget_max=131 | t=70
+  Run 3/10 | infected=10.8% | budget_max=132 | t=42

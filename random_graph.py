@@ -13,7 +13,7 @@ def show_weighted(n, edges, sets=None, layout=None):
 
     colorStates = {"S": "green", "I": "red", "B": "yellow"}
 
-    G = nx.Graph()
+    G = nx.DiGraph()
     G.add_weighted_edges_from(edges)
 
     # default state
@@ -53,12 +53,12 @@ def show(n, edges, sets=None, layout=None):
 
     colorStates = {"S": "green", "I": "red", "B": "yellow"}
 
-    G = nx.Graph(edges)
+    G = nx.DiGraph(edges)
 
     # default state
     nx.set_node_attributes(G, {node: "S" for node in G.nodes()}, "state")
 
-    for i,_,_ in edges:
+    for i,_ in edges:
         if i in sets[0]:
             G.nodes[i]["state"] = "S"
         if i in sets[1]:
@@ -93,10 +93,10 @@ def generate_graph(
     # G=nx.barabasi_albert_graph(n,3,seed=seed)
     G = nx.newman_watts_strogatz_graph(n, 4, 0.2, seed=seed)
     # G = nx.karate_club_graph()
-    # G=nx.erdos_renyi_graph(n,0.05,seed=seed)
+    # G=nx.erdos_renyi_graph(n,0.05,seed=seed)nx.DiGraph
 
     edges = list(G.edges())
-    edges= test(n,edges, np.random.default_rng(seed))
+    edges= test(edges, np.random.default_rng(seed))
     final_edges = edges.copy()
     for edge in edges:
         i, j, c = edge
@@ -125,8 +125,20 @@ def determine_T(edges, sets):
     # ---Determine critical nodes ----------
     normal = sets[0]
     filtered_edges = filter_edges(normal, edges)
+    # Invert costs so low-cost (high-spread) edges contribute more to centrality.
+    # This makes T sensitive to the cost model passed in.
+    # inverted = [(i, j, max(1, 100 - c)) for i, j, c in filtered_edges]
+    unweighted_edges = [(i, j) for i, j, c in filtered_edges]
     G = nx.Graph()
-    G.add_weighted_edges_from(filtered_edges)
+    G.add_edges_from(unweighted_edges)
+
+    # show(len(G.nodes()), unweighted_edges)
+    # centrality = {}
+    # for component in nx.strongly_connected_components(G):
+    #     H = G.subgraph(component)
+    #     centrality.update(nx.pagerank(H)) #max_iter=5000, weight="weight"
+    # k = max(1, len(edges) // 5)
+    # T = set(sorted(centrality, key=centrality.get, reverse=True)[:k])
     T = set(nx.voterank(G, len(G.nodes) // 5))
     return T
 
@@ -140,10 +152,10 @@ def determine_k_dangerous_edges(edges, risk_edges, sets, budget):
     
     high_risk_edges = []
     if len(healthyEdges) > 0:
-        G = nx.Graph()
+        G = nx.DiGraph()
         G.add_weighted_edges_from(healthyEdges)
         centrality = {}
-        for component in nx.connected_components(G):
+        for component in nx.strongly_connected_components(G):
             H = G.subgraph(component)
             c = nx.eigenvector_centrality(H, max_iter=5000)
             centrality.update(c)
@@ -154,7 +166,7 @@ def determine_k_dangerous_edges(edges, risk_edges, sets, budget):
 
 
 def analyse_graph(n, edges):
-    G = nx.Graph(edges)
+    G = nx.DiGraph(edges)
     avg_degree = sum(d for _, d in G.degree()) / n
     print("Average node degree: ", avg_degree)
 
@@ -173,7 +185,7 @@ if __name__ == "__main__":
     for _ in range(10):
         seed = np.random.randint(0, 100)
         edges = generate_graph(n, seed)
-        G = nx.Graph()
+        G = nx.DiGraph()
         G.add_nodes_from(range(n))
         G.add_edges_from(edges)
         avg_degree = sum(d for _, d in G.degree()) / n

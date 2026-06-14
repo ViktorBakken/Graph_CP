@@ -1,7 +1,7 @@
 import numpy as np
 import networkx as nx
 
-def test(n,edges,rng):
+def test(edges,rng):
     chosen_edges=[]
     new_edges=[]
     #Determine edge costs
@@ -15,39 +15,35 @@ def test(n,edges,rng):
             cost = next(c for (a,b,c) in new_edges if (a,b) == (j,i))
             chosen_edges.append((i,j))
             new_edges.append((i,j,cost))
+    return new_edges
 
-
+def node_edge_costs(edges, a=0):
     #Determine node cost
-    node_cost= node_weights(n,edges)
+    node_cost= node_weights(edges)
 
     #Readjust edge weights
-    def weight_to_procent(weight): return 1-(weight/100)
-    def procent_to_weight(procent): return (1-procent)*100
-    def update_procent(node_procent, edge_procent,a=4):return max(min((node_procent*a)+(edge_procent*(1-a)),1),0)
+    def weight_to_procent(weight): return float(1-(weight/100))
+    def procent_to_weight(procent): return max(  int(((1-procent)*100)),1)
+    def update_procent(node_procent, edge_procent):return max(min((node_procent*a)+(edge_procent*(1-a)),1),0)
+    
     final_edges=[]
-
-    for i,j,c in new_edges:
+    for i,j,c in edges:
         p=weight_to_procent(c)
-        new_p=update_procent(node_cost[i],p)
+        new_p=update_procent(node_cost[j],p)
         new_c=procent_to_weight(new_p)
         final_edges.append((i,j,new_c))
-        print(f"edge:({i},{j},{c}), where i={node_cost[i]}, new c={new_c}")
-    return new_edges
+        # print(f"({i},{j}): j_w={node_cost[j]} and e_w={p} <=> old c={c} != new c={new_c} ")
+    # quit()
+    return final_edges, node_cost
 
 def generate_cost(rng):
     # return 1
     return(int(rng.integers(1,100)))
 
-def node_weights(n,edges):
-
-    G = nx.Graph(edges)
-    avg_degree = sum(d for _, d in G.degree()) / n
-    print("Average node degree: ", avg_degree)
-
-    import numpy as np
-
+def node_weights(edges):
+    unweighted_edges = [(i, j) for i, j, *_ in edges]
+    G = nx.DiGraph(unweighted_edges)
     centrality = nx.eigenvector_centrality(G, max_iter=5000)
-
     n_nodes = G.number_of_nodes()
     nodes = sorted(G.nodes())
 
@@ -57,6 +53,8 @@ def node_weights(n,edges):
         key=lambda x: x[1],
         reverse=False
     )
+    # print("Node centrality:", sorted_centrality)
+    # print("Voterank:", nx.voterank(G, n_nodes))
 
     ranked_nodes = {}
 
@@ -77,7 +75,6 @@ def node_weights(n,edges):
     # lowest centrality -> r = 0
     # highest centrality -> r close to 1
     r = (final_ranking - 1) / (n_nodes - 1)
-    print(r[0])
     return r
 
     
