@@ -15,30 +15,30 @@ import ast
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---Simulation parameters------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
-max_tie= 99+1#205
 spread = 0.2  # The chance an infection will spread through an edge
 fixed=False
 
 lame=0.1
 use_lame=False
 
-node_importance=0.5
+node_importance=0.9
 
-early_stop = (True, 30)
+early_stop = (True, 10)
 seed_selection = 2**32
 
-repr = 70
-runs = 70
+repr = 30
+runs = 30
 
 solver = "cplex"
-interdiction_types = ["edge", "semi edge", "edge mzn", "node edge mzn"]  #
+interdiction_types = ["edge", "semi edge", "edge mzn", "node edge mzn", "influencer mzn"]
 
 verbose = 0 # Display settings
 # -------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 def Determine_Start_Infection(
-    n, spread, early_stop, infected_nodes, edges, rng, verbose,layout, fixed
+    n, spread, early_stop, infected_nodes, edges, rng, verbose, layout, fixed,
+    influencer_set=None,
 ):
     procent_infected=100
     limit= early_stop[1]+3
@@ -54,17 +54,18 @@ def Determine_Start_Infection(
             layout=layout,
             max_tie=max_tie,
             spread_p=spread,
-            fixed=fixed
-            
+            fixed=fixed,
+            influencer_set=influencer_set,
         )
         procent_infected=len(states[1])/n*100
-        
+
 
     return new_edges, end_time_step, states, head_start_infected
 
 
 def Determine_Infection_Time(
-    n, spread, repr, edges, layout, infected_nodes, verbose, rng, fixed
+    n, spread, repr, edges, layout, infected_nodes, verbose, rng, fixed,
+    influencer_set=None,
 ):
     t_avg = []
     for _ in range(repr):
@@ -79,7 +80,8 @@ def Determine_Infection_Time(
             rng=rng,
             max_tie=max_tie,
             spread_p=spread,
-            fixed=fixed
+            fixed=fixed,
+            influencer_set=influencer_set,
         )
         t_avg.append(t_i)
     t = int(np.mean(t_avg))
@@ -99,7 +101,8 @@ def Simulate_Infection(
     remaining_time,
     graph_edges,
     seed_matrix,
-    fixed
+    fixed,
+    influencer_set=None,
 ):
     data = []
 
@@ -115,7 +118,8 @@ def Simulate_Infection(
             rng=np.random.default_rng(seed),
             max_tie=max_tie,
             spread_p=spread,
-            fixed=fixed
+            fixed=fixed,
+            influencer_set=influencer_set,
         )
         data.append(infected_over_time)
 
@@ -133,7 +137,7 @@ def Set_Up_Graph(edges, infected_set, suceptible_set):
             new_edges.remove(edge)
         if i in infected_set and j in suceptible_set:
             risk_edges.add(edge)
-        if j == infected_set and j in suceptible_set:
+        if j in infected_set and j in suceptible_set:
             print("OI")
     return new_edges, risk_edges
 
@@ -157,6 +161,7 @@ def Interdict(
     edges,
     new_edges,
     mzn_edges,
+    start_edges,
     states,
     infected_nodes,
     risk_edges,
@@ -164,9 +169,16 @@ def Interdict(
     b,
     rng,
     layout,
+    influencer_set=None,
 ):
     T = set()
     rem_edges = []
+    M=0
+    if interdiction_type in ["edge mzn", "node edge mzn", "influencer mzn"]:
+        import networkx as nx
+        edges_set = set((i, j) for i, j, _ in start_edges)
+        M=nx.diameter(nx.Graph(edges_set))
+
     match interdiction_type:
         case "edge mzn":
             T = determine_T(mzn_edges, states)
@@ -175,13 +187,15 @@ def Interdict(
                 solver_name=solver,
                 num_nodes=n,
                 budget=b,
-                infected_nodes=infected_nodes,  
+                infected_nodes=infected_nodes,
                 critical_nodes=T,
                 graph_edges=mzn_edges,
                 interdiction_type="edge",
                 displ=verbose,
                 layout=layout,
                 seed=rng.integers(0, seed_selection),
+                node_b_weights=True,
+                M=M,
             )
             node_aware_cost = {(i, j): c for i, j, c in edges}
             new_edges = [(i, j, node_aware_cost.get((i, j), c)) for i, j, c in new_edges]
@@ -193,15 +207,34 @@ def Interdict(
                 solver_name=solver,
                 num_nodes=n,
                 budget=b,
-                infected_nodes=infected_nodes,  
+                infected_nodes=infected_nodes,
                 critical_nodes=T,
                 graph_edges=edges,
                 interdiction_type="edge",
                 displ=verbose,
                 layout=layout,
                 seed=rng.integers(0, seed_selection),
+                M=M,
             )
 
+        case "influencer mzn":
+            T = determine_T(edges, states)
+            T = set(T) - set(infected_nodes)
+            new_edges = interdiction_minizinc(
+                solver_name=solver,
+                num_nodes=n,
+                budget=b,
+                infected_nodes=infected_nodes,
+                critical_nodes=T,
+                graph_edges=edges,
+                interdiction_type="edge",
+                displ=verbose,
+                layout=layout,
+                seed=rng.integers(0, seed_selection),
+                node_b_weights=True,
+                M=M,
+                influencer_set=influencer_set,
+            )
 
         case "edge":
             if len(risk_edges) > b:
@@ -248,11 +281,21 @@ n+=1
 layout = None
 results = {interdiction_type: [] for interdiction_type in interdiction_types}
 seeds = np.random.SeedSequence(42)
+
+# Assign influencer class: 10% of nodes spread at 80%, remainder at 20%
+influencer_set = set(
+    np.random.default_rng(seeds.spawn(1)[0]).choice(
+        n, size=max(1, int(n * 0.1)), replace=False
+    ).tolist()
+)
+print(f"Influencers: {len(influencer_set)} / {n}")
+
 infected_percentages = []
-infected_nodes = {analyse_graph(n, edges)}  
+infected_nodes = {analyse_graph(n, edges)}
 print(f"Infected nodes = {infected_nodes}")
-minizinc_edges = test(edges, np.random.default_rng(seeds.spawn(1)[0]))
-edges, node_centrality_weights= node_edge_costs(minizinc_edges, a=node_importance)
+max_tie=n
+minizinc_edges = test(edges, np.random.default_rng(seeds.spawn(1)[0]),n)
+edges, node_centrality_weights= node_edge_costs(minizinc_edges, a=node_importance, n=n)
 
 if use_lame:
     nr_of_lame = int(n * lame)
@@ -272,7 +315,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
     start_seed, time_seed, interdict_seed, infection_simulaiton_seed = (
         run_seed.spawn(4)
     )
-    
+
     # --- Common start before interdiction ----------------------------------------
     start_edges, head_start, states, common_start = Determine_Start_Infection(
         n=n,
@@ -284,6 +327,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         rng=np.random.default_rng(start_seed),
         layout=layout,
         fixed=fixed,
+        influencer_set=influencer_set,
     )
     # print("is start_edges == edges:", start_edges == edges)
     if verbose == 1:
@@ -296,7 +340,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
     start_edges, risk_edges = Set_Up_Graph(start_edges, infected_set, suceptible_set)
     mzn_start_edges, _ = Set_Up_Graph(minizinc_edges, infected_set, suceptible_set)
     budget_max = len(risk_edges)
-    
+
     # --- Determine time until complete infection ----------------------------------------
     t = Determine_Infection_Time(
         n=n,
@@ -308,6 +352,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         infected_nodes=infected_set,
         rng=np.random.default_rng(time_seed),
         fixed=fixed,
+        influencer_set=influencer_set,
     )
     average_time.append(t)
 
@@ -327,9 +372,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
 
         data_average = []
         for b in range(budget_max + 1):
-            # data=[]
-            # for _ in range(repr):
-            new_edges = start_edges.copy() if interdiction_type != "edge mzn" and interdiction_type != "node edge mzn" else []
+            new_edges = start_edges.copy() if interdiction_type not in ["edge mzn", "node edge mzn", "influencer mzn"] else []
 
             T , new_edges = Interdict(
                     n=n,
@@ -338,6 +381,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                     edges=start_edges,
                     new_edges=new_edges,
                     mzn_edges=mzn_start_edges,
+                    start_edges=edges,
                     states=states,
                     infected_nodes=infected_set,
                     risk_edges=risk_edges,
@@ -345,6 +389,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                     b=b,
                     rng=interdict_rng,
                     layout=layout,
+                    influencer_set=influencer_set,
             )
 
             data_average.append(
@@ -361,11 +406,9 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                         graph_edges=new_edges,
                         seed_matrix=seed_matrix,
                         fixed=fixed,
+                        influencer_set=influencer_set,
                     )
             )
-            # if interdiction_type=="edge mzn":
-            #     if b==19 or b==20:print("\nb=",b,"\n", data_average[-1])
-            # data_average.append(np.mean(data,axis=1))
         Person_time = np.array(np.sum(data_average, axis=1), dtype=float)
         score = 1 - Person_time / Person_time[0]
 

@@ -1,5 +1,6 @@
 from minizinc import Instance, Model, Solver
 from random_graph import determine_T, show, show_weighted
+import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 from Generate_cost_edges import test
@@ -19,7 +20,9 @@ def interdiction_minizinc(
     displ=0,
     layout=None,
     seed=42,
-    node_b_weights=None,  # dict node->float (0-1), scales b[t] for targets
+    node_b_weights=False,  # dict node->float (0-1), scales b[t] for targets
+    M=0,
+    influencer_set=None,
 ):
     k = budget
     n = num_nodes
@@ -81,7 +84,7 @@ def interdiction_minizinc(
         #     (6, 9, 63),
         # ]
         edges= [(32, 37, 50), (4, 0, 91), (10, 34, 58), (21, 16, 91), (41, 31, 22), (34, 10, 58), (17, 3, 87), (20, 29, 35), (28, 21, 31), (8, 18, 55), (45, 37, 95), (12, 34, 89), (0, 14, 18), (13, 8, 93), (6, 2, 99), (4, 48, 60), (43, 30, 75), (7, 10, 82), (44, 47, 15), (34, 12, 89), (5, 3, 1), (17, 5, 38), (36, 18, 19), (48, 38, 58), (20, 31, 19), (0, 7, 18), (20, 40, 75), (32, 5, 25), (0, 16, 93), (13, 10, 92), (24, 19, 20), (7, 21, 45), (19, 4, 70), (3, 17, 87), (38, 48, 58), (5, 32, 25), (13, 12, 8), (35, 12, 27), (38, 11, 92), (8, 25, 71), (49, 11, 2), (8, 34, 54), (30, 43, 75), (9, 42, 74), (14, 1, 52), (29, 20, 35), (40, 20, 75), (0, 48, 51), (12, 13, 8), (40, 29, 87), (22, 23, 16), (21, 25, 41), (23, 22, 16), (0, 2, 43), (38, 4, 13), (10, 15, 81), (33, 17, 1), (41, 39, 85), (7, 16, 95), (29, 13, 7), (17, 2, 29), (34, 18, 58), (12, 15, 62), (4, 11, 14), (39, 41, 85), (11, 4, 14), (29, 40, 87), (3, 30, 22), (27, 15, 56), (10, 8, 12), (4, 38, 13), (6, 1, 72), (7, 0, 18), (1, 14, 52), (15, 13, 39), (17, 32,77), (2, 22, 95), (16, 21, 91), (22, 0, 31), (3, 5, 1), (15, 34, 47), (35, 46, 63), (12, 26, 3), (31, 39, 8), (4, 22, 61), (12, 35, 27), (8, 13, 93), (2, 6, 99), (25, 8, 71), (28, 25, 61), (22, 2, 95), (12, 10, 46), (15, 27, 56), (9, 2, 76), (4, 24, 47), (1, 0, 67), (10, 12, 46), (25, 10, 90), (16, 7, 95), (19, 24, 20), (2, 17, 29), (26, 12, 3), (25, 28, 61), (22, 4, 61), (11, 38, 92), (14, 0, 18), (46, 35, 63), (7, 25, 2), (18, 8, 55), (18, 34, 58), (1, 2, 39), (0, 4, 91), (2, 1, 39), (16, 0, 93), (24, 4, 47), (37, 32, 50), (0, 22, 31), (25, 21, 41), (3, 2, 89), (14, 2, 65), (11, 49, 2), (13, 34, 68), (32, 47, 58), (4, 19, 70), (18, 36, 19), (34, 20, 6), (8, 10, 12), (10, 7, 82), (2, 3, 89), (48, 0, 51), (10, 25, 90), (47, 44, 15), (31, 20, 19), (21, 28, 31), (34, 13, 68), (30, 3, 22), (34, 31, 99), (1,6, 72), (25, 7, 2), (31, 41, 22), (2, 14, 65), (17, 33, 1), (25, 16, 22), (37, 45, 95), (13, 20, 21), (6, 14, 88), (20, 13, 21), (44, 32, 80), (13, 29, 7), (14, 6, 88), (16, 25, 22), (34, 15, 47), (0, 1,67), (20, 34, 6), (31, 34, 99), (48, 4, 60), (32, 17, 77), (15, 10, 81), (32, 44, 80), (34, 8, 54), (39, 31, 8), (8, 7, 62), (42, 9, 74), (2, 0, 43), (5, 17, 38), (10, 13, 92), (47, 32, 58), (2, 9, 76), (13, 15, 39), (15, 12, 62), (7, 8, 62), (21, 7, 45)]        # print("edges=", sorted(edges, key=lambda e: e[2]))
-        edges,node_b_weights= node_edge_costs(edges, a=1)
+        # edges,node_b_weights= node_edge_costs(edges, a=1)
         # edges=[(12, 7, 27), (7, 12, 5), (5, 4, 52), (4, 5, 62), (4, 6, 45), (6, 4, 49), (8, 0, 59), (0, 8, 63), (9, 5, 38), (5, 9, 34), (11, 2, 21), (2, 11, 35), (11, 5, 19), (5, 11, 26), (9, 14, 27), (14, 9, 55), (13, 11, 39), (11, 13, 10), (7, 10, 44), (10, 7, 76), (6, 14, 59), (14, 6, 77), (4, 2, 44), (2, 4, 41), (3, 0, 65), (0, 3, 61), (9, 7, 48), (7, 9, 41), (5, 12, 41), (12, 5, 59), (11, 1, 17), (1, 11, 49), (11, 7, 20), (7, 11, 24), (1, 2, 80), (2, 1, 62), (0, 13, 48), (13, 0, 31), (13, 10, 61), (10, 13, 68), (8, 7, 54), (7, 8, 15), (9, 6, 42), (6, 9, 52)]
 
         # 100
@@ -116,16 +119,21 @@ def interdiction_minizinc(
         if i in S:
             b[i] = 1
         elif i in T:
-            b[i] = -1
+            b[i] = -4 if (influencer_set is not None and i in influencer_set) else -1
 
 
     # Load a solver
     solver = Solver.lookup(solver_name)
 
     # Load the model
-    model_choice = "Solver_node.mzn" if interdiction_type == "node" else "Solver.mzn"
+    model_choice = "Solver_2.mzn"
     # Create an instance
     instance = Instance(solver, Model(model_choice))
+
+    if node_b_weights:
+        cost=[1 for _ in cost] # ignore edge costs
+
+
 
     # Pass data from Python to MiniZinc
     instance["K"] = k
@@ -136,15 +144,16 @@ def interdiction_minizinc(
     instance["c"] = cost
     instance["b"] = b
     instance["idx_inf"] = inf_edges
-    instance["inf"] = len(inf_edges)
-
+    instance["inf"] = len(inf_edges)        
+    instance["M"] = max(cost)*M # upperbound of beta, can be tuned for better performance
+    
     # Solve
     # start_mzn= time.time()
 
     result = instance.solve(random_seed=seed, processes=1)
     # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
     # print(time.time() - start_mzn)
-    # print(result["x"]) #if displ:
+    # if budget==9: print(result) #if displ:
     # print(result,", bounds:[",min(result["pi"]),",",max(result["pi"]),"]")
     # if result.status=="UNBOUNDED":
     #     print("\n\n\n\n\nHIHIHIHIHIHI\n\n\n\n\n")

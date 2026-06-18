@@ -21,7 +21,7 @@ set of int: E_can = {idx_inf[k] | k in E_inf};
 set of int: E_rest = E diff E_can;
 
 % Decsion Variables
-int: M = sum(e in E)(c[e]);  % upperbound of beta
+int: M;  % upperbound of beta
 
 array[V] of var -2*M..M: pi; 
 array[E] of var 0..M: beta; 
@@ -51,10 +51,18 @@ var int: obj= sum(v in V)(b[v] * pi[v]) - sum(w);
 
 solve maximize obj;
 output [
-  show(obj),
-  "\nSelected vertex (from, to):\n(",
-  show([i[e] | e in index_set(x) where fix(x[e]) = 1]),
-  ", ", 
-  show([j[e] | e in index_set(x) where fix(x[e]) = 1]),
-  ")"
+  % "\nbudget K=", show(K),
+  % "\nOBJ=",show(obj),
+  % "\npi=",  show(pi),
+  % "\nbeta=", show(beta),
+  % "\nw=", show(w),
+  % "\nM=",show(M),
+  "\nx=", show(x)
+
+
 ];
+% show(obj),
+%   "\nSelected vertex (from, to):\n(",
+%   show([i[e] | e in index_set(x) where fix(x[e]) = 1]),
+%   ", ", 
+%   show([j[e] | e in index_set(x) where fix(x[e]) = 1]),
