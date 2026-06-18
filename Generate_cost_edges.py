@@ -31,7 +31,7 @@ def test(n,edges,rng):
         new_p=update_procent(node_cost[i],p)
         new_c=procent_to_weight(new_p)
         final_edges.append((i,j,new_c))
-        print(f"edge:({i},{j},{c}), where i={node_cost[i]}, new c={new_c}")
+        # print(f"edge:({i},{j},{c}), where i={node_cost[i]}, new c={new_c}")
     return new_edges
 
 def generate_cost(rng):
@@ -77,7 +77,7 @@ def node_weights(n,edges):
     # lowest centrality -> r = 0
     # highest centrality -> r close to 1
     r = (final_ranking - 1) / (n_nodes - 1)
-    print(r[0])
+    # print(r[0])
     return r
 
     

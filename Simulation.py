@@ -16,6 +16,7 @@ def cascade(
     rng,
     max_tie,
     spread_p,
+    influensers,
     early_stop=(False, 0),
     T_set=set(),
     fixed=False,
@@ -63,9 +64,14 @@ def cascade(
                 if j in suceptible:
                     rand = rng.uniform(0, 1)
                     if fixed:
-                        if rand <= spread_p:
-                            infected.add(j)
-                            suceptible.discard(j)
+                        if i in influensers or j in influensers:
+                            if rand <= spread_p[1]:
+                                infected.add(j)
+                                suceptible.discard(j)
+                        else:
+                            if rand <= spread_p[0]:
+                                infected.add(j)
+                                suceptible.discard(j)
                     else:
                         if rand >= c / max_tie:
                             infected.add(j)

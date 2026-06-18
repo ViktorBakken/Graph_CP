@@ -19,7 +19,6 @@ array[E_inf] of int: idx_inf;  % index of infected edges
 set of int: S={s | s in index_set(b) where b[s]=1};
 set of int: E_can = {idx_inf[k] | k in E_inf};
 set of int: E_rest = E diff E_can;
-int: K_eff = min(K, card(E_can));
 
 % Decsion Variables
 int: M = m;  % upperbound of beta
@@ -57,5 +56,6 @@ output [
   show([i[e] | e in index_set(x) where fix(x[e]) = 1]),
   ", ", 
   show([j[e] | e in index_set(x) where fix(x[e]) = 1]),
-  ")"
+  ")\ncost=",
+  show(c)
 ];

@@ -8,6 +8,8 @@ import time
 
 
 def interdiction_minizinc(
+    influensers,
+    spread,
     num_nodes=15,
     budget=2,
     infected_nodes=None,
@@ -19,6 +21,7 @@ def interdiction_minizinc(
     displ=0,
     layout=None,
     seed=42,
+    
 ):
     k = budget
     n = num_nodes
@@ -123,9 +126,7 @@ def interdiction_minizinc(
     else:
         T = critical_nodes.copy()
     nodes = [i for i in range(n)]
-
     tail, head, cost = map(list, zip(*edges))
-   
 
 
     b = [0] * n
@@ -134,15 +135,18 @@ def interdiction_minizinc(
             b[i] = 1
         elif i in T:
             b[i] = -1
+        if i in influensers and i not in S:
+            b[i]= -4
 
 
     # Load a solver
     solver = Solver.lookup(solver_name)
 
     # Load the model
-    model_choice = "Solver_node.mzn" if interdiction_type == "node" else "Solver.mzn"
+    model_choice = "Solver.mzn"
     # Create an instance
     instance = Instance(solver, Model(model_choice))
+
 
     # Pass data from Python to MiniZinc
     instance["K"] = k
@@ -161,7 +165,7 @@ def interdiction_minizinc(
     result = instance.solve(random_seed=seed, processes=1)
     # print("Minizinc interdiction time : ",time.time() - start_mzn,"s")
     # print(time.time() - start_mzn)
-    # print(result["x"]) #if displ:
+    # print(result) #if displ:
     # print(result,", bounds:[",min(result["pi"]),",",max(result["pi"]),"]")
     # if result.status=="UNBOUNDED":
     #     print("\n\n\n\n\nHIHIHIHIHIHI\n\n\n\n\n")
@@ -207,6 +211,6 @@ if __name__ == "__main__":
     sovl = ["gurobi", "cbc", "highs", "coinbc", "coin-bc"]  # "cplex"
     for solver in sovl:
         print(solver)
-        interdiction_minizinc(
+        interdiction_minizinc(set(),spread=(0,0),
             interdiction_type="edge", solver_name=solver, displ=displ, seed=42
         )  # np.random.randint(0,2**32-1)

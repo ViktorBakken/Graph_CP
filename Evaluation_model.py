@@ -16,28 +16,29 @@ import ast
 # ---Simulation parameters------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 max_tie= 99+1#205
-spread = 0.2  # The chance an infection will spread through an edge
-fixed=False
+spread = (0.2,0.8)  # The chance an infection will spread through an edge
+num_influm=0.1
+fixed=True
 
 lame=0.1
 use_lame=False
 
 
-early_stop = (True, 10)
+early_stop = (True, 30)
 seed_selection = 2**32
 
-repr = 70
-runs = 70
+repr = 20
+runs = 20
 
 solver = "gurobi"
-interdiction_types = ["edge", "semi edge", "edge mzn"]  #
+interdiction_types = ["edge", "semi edge", "edge simple","edge mzn"]  #
 
 verbose = 0 # Display settings
 # -------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 def Determine_Start_Infection(
-    n, spread, early_stop, infected_nodes, edges, rng, verbose,layout, fixed
+    n, spread, early_stop, infected_nodes, edges, rng, verbose,layout, fixed,influensers
 ):
     procent_infected=100
     limit= early_stop[1]+3
@@ -53,8 +54,8 @@ def Determine_Start_Infection(
             layout=layout,
             max_tie=max_tie,
             spread_p=spread,
-            fixed=fixed
-            
+            fixed=fixed,
+            influensers=influensers
         )
         procent_infected=len(states[1])/n*100
         
@@ -63,7 +64,7 @@ def Determine_Start_Infection(
 
 
 def Determine_Infection_Time(
-    n, spread, repr, edges, layout, infected_nodes, verbose, rng, fixed
+    n, spread, repr, edges, layout, infected_nodes, verbose, rng, fixed,influensers
 ):
     t_avg = []
     for _ in range(repr):
@@ -78,7 +79,8 @@ def Determine_Infection_Time(
             rng=rng,
             max_tie=max_tie,
             spread_p=spread,
-            fixed=fixed
+            fixed=fixed,
+            influensers=influensers
         )
         t_avg.append(t_i)
     t = int(np.mean(t_avg))
@@ -98,7 +100,8 @@ def Simulate_Infection(
     remaining_time,
     graph_edges,
     seed_matrix,
-    fixed
+    fixed,
+    influensers
 ):
     data = []
 
@@ -114,7 +117,8 @@ def Simulate_Infection(
             rng=np.random.default_rng(seed),
             max_tie=max_tie,
             spread_p=spread,
-            fixed=fixed
+            fixed=fixed,
+            influensers=influensers
         )
         data.append(infected_over_time)
 
@@ -162,6 +166,9 @@ def Interdict(
     b,
     rng,
     layout,
+    spread,
+    influensers,
+
 ):
     T = set()
     rem_edges = []
@@ -180,6 +187,26 @@ def Interdict(
                 displ=verbose,
                 layout=layout,
                 seed=rng.integers(0, seed_selection),
+                influensers=influensers,
+                spread=spread
+            )
+
+        case "edge simple":
+            T = determine_T(edges, states)
+            T = set(T) - set(infected_nodes)
+            new_edges = interdiction_minizinc(
+                solver_name=solver,
+                num_nodes=n,
+                budget=b,
+                infected_nodes=infected_nodes,  # infected_edges=risk_edges,
+                critical_nodes=T,
+                graph_edges=edges,
+                interdiction_type="edge",
+                displ=verbose,
+                layout=layout,
+                seed=rng.integers(0, seed_selection),
+                influensers=set(),
+                spread=spread,
             )
 
         case "edge":
@@ -235,7 +262,12 @@ seeds = np.random.SeedSequence(42)
 infected_percentages = []
 infected_nodes = {analyse_graph(n, edges)}  
 print(f"Infected nodes = {infected_nodes}")
-edges = test(n,edges, np.random.default_rng(seeds.spawn(1)[0]))
+
+influensers=set(np.random.default_rng(seeds.spawn(1)[0]).integers(1,n,int(n*num_influm)))
+if fixed:
+    edges=[(i,j,1) for i,j in edges]
+if not fixed:
+    edges = test(n,edges, np.random.default_rng(seeds.spawn(1)[0]))
 
 if use_lame:
     nr_of_lame = int(n * lame)
@@ -246,7 +278,6 @@ if use_lame:
         (i, j, 0 if i in lame_set else c)
         for i, j, c in edges
     ]
-
 
 average_time=[]
 
@@ -267,6 +298,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         rng=np.random.default_rng(start_seed),
         layout=layout,
         fixed=fixed,
+        influensers=influensers
     )
 
     if verbose == 1:
@@ -290,6 +322,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         infected_nodes=infected_set,
         rng=np.random.default_rng(time_seed),
         fixed=fixed,
+        influensers=influensers,
     )
     average_time.append(t)
 
@@ -326,6 +359,8 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                     b=b,
                     rng=interdict_rng,
                     layout=layout,
+                    influensers=influensers,
+                    spread=spread
             )
 
             data_average.append(
@@ -341,6 +376,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                         remaining_time=t,
                         graph_edges=new_edges,
                         seed_matrix=seed_matrix,
+                        influensers=influensers,
                         fixed=fixed,
                     )
             )
@@ -386,11 +422,5 @@ plt.title(
 plt.grid(True, alpha=0.3)
 plt.legend()
 
-if use_lame:
-    plt.savefig(f"lame/{n}_{int(lame*100)}Spread.png",dpi=1200,bbox_inches='tight')
-elif fixed:
-    plt.savefig(f"fixed/{n}_{int(spread*100)}Spread_{int(early_stop[1])}inf_.png",dpi=1200,bbox_inches='tight')
-else:
-    plt.savefig(f"res/{n}_{int(lame*100)}{int(spread*100)}Spread.png",dpi=1200,bbox_inches='tight')
-
+plt.savefig(f"Final/{n}_{int(spread[0]*100)}N_{int(spread[1]*100)}Infl_Spread.png",dpi=1200,bbox_inches='tight')
 plt.show()
