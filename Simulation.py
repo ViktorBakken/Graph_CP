@@ -64,7 +64,7 @@ def cascade(
                 if j in suceptible:
                     rand = rng.uniform(0, 1)
                     if fixed:
-                        if i in influensers or j in influensers:
+                        if i in influensers:
                             if rand <= spread_p[1]:
                                 infected.add(j)
                                 suceptible.discard(j)

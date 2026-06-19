@@ -21,6 +21,7 @@ def interdiction_minizinc(
     displ=0,
     layout=None,
     seed=42,
+    sensitivity=4
     
 ):
     k = budget
@@ -95,7 +96,7 @@ def interdiction_minizinc(
     )
 
     if interdiction_type == "edge" and (k <= 0 or len(inf_edges) == 0):
-        return edges.copy()
+        return set()
 
     if critical_nodes == None:
         # 15
@@ -136,7 +137,7 @@ def interdiction_minizinc(
         elif i in T:
             b[i] = -1
         if i in influensers and i not in S:
-            b[i]= -4
+            b[i]= -sensitivity
 
 
     # Load a solver
@@ -176,15 +177,11 @@ def interdiction_minizinc(
 
     edge_remaining = [edges[i] for i in range(len(edges)) if i not in interdicted_idxs]
 
-    if interdiction_type == "edge":
-        # print(edge_remaining)
-        for i, j, c in edge_rem:
-            c_2=[cc for jj,ii,cc in edges if jj==j and ii==i][0]
-            if (j, i, c_2) in edge_remaining:
-                edge_remaining.remove((j, i, c_2))
-            else:
-                print("overflow or bad edge selection")
-
+    edges_removed = {(i,j,c) for i,j,c in edge_rem} | {(j,i,c) for i,j,c in edge_rem}
+    for i,j,c in edges_removed:
+        if (j,i,c) not in edges_removed:
+            print("OI")
+    # print(f"Edges removed: {edges_removed}")
     # if displ:
     # if interdiction_type == "edge":
     #     print(
@@ -203,7 +200,7 @@ def interdiction_minizinc(
         show_weighted(n, edge_remaining, [nodes, S, T], layout=layout)
 
 
-    return edge_remaining
+    return edges_removed
 
 
 if __name__ == "__main__":
@@ -212,5 +209,5 @@ if __name__ == "__main__":
     for solver in sovl:
         print(solver)
         interdiction_minizinc(set(),spread=(0,0),
-            interdiction_type="edge", solver_name=solver, displ=displ, seed=42
+            interdiction_type="edge", solver_name=solver, displ=displ, seed=42, sensitivity=4
         )  # np.random.randint(0,2**32-1)

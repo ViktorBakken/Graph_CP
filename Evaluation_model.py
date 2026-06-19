@@ -15,22 +15,27 @@ import ast
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---Simulation parameters------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
-max_tie= 99+1#205
-spread = (0.2,0.8)  # The chance an infection will spread through an edge
+spread = (0.4,0.8)  # The chance an infection will spread through an edge
 num_influm=0.1
+sensitivity=4
 fixed=True
 
 lame=0.1
 use_lame=False
 
-
-early_stop = (True, 30)
+max_tie= 99+1#205
+early_stop = (True,10)
 seed_selection = 2**32
 
-repr = 20
-runs = 20
 
-solver = "gurobi"
+
+repr = 50
+runs = 50
+
+
+
+
+solver = "cplex"
 interdiction_types = ["edge", "semi edge", "edge simple","edge mzn"]  #
 
 verbose = 0 # Display settings
@@ -168,6 +173,7 @@ def Interdict(
     layout,
     spread,
     influensers,
+    sensitivity
 
 ):
     T = set()
@@ -176,7 +182,7 @@ def Interdict(
         case "edge mzn":
             T = determine_T(edges, states)
             T = set(T) - set(infected_nodes)
-            new_edges = interdiction_minizinc(
+            rem_edges = interdiction_minizinc(
                 solver_name=solver,
                 num_nodes=n,
                 budget=b,
@@ -188,13 +194,14 @@ def Interdict(
                 layout=layout,
                 seed=rng.integers(0, seed_selection),
                 influensers=influensers,
-                spread=spread
+                spread=spread,
+                sensitivity=sensitivity
             )
 
         case "edge simple":
             T = determine_T(edges, states)
             T = set(T) - set(infected_nodes)
-            new_edges = interdiction_minizinc(
+            rem_edges = interdiction_minizinc(
                 solver_name=solver,
                 num_nodes=n,
                 budget=b,
@@ -207,6 +214,7 @@ def Interdict(
                 seed=rng.integers(0, seed_selection),
                 influensers=set(),
                 spread=spread,
+                sensitivity=sensitivity
             )
 
         case "edge":
@@ -224,7 +232,7 @@ def Interdict(
                 rem_edges = risk_edges.copy()
 
                 # Remove the selected edges
-    Remove_interdicted_edges(rem_edges, new_edges)
+    new_edges=Remove_interdicted_edges(rem_edges, new_edges)
     return T, new_edges
 
 
@@ -252,6 +260,9 @@ for edge in edges:
     if i > n:
         n=int(i)
 n+=1
+
+
+save=f"Final/{n}_{early_stop[1]}%_inf_{int(num_influm*100)}N_{int(spread[1]*100)}Influence_Spread_{int(spread[0]*100)}Normal_Spread_{repr}repeat_{sensitivity}sensitivity"
 
 # print(len(edges))
 # quit()
@@ -344,7 +355,7 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
         for b in range(budget_max + 1):
             # data=[]
             # for _ in range(repr):
-            new_edges = start_edges.copy() if interdiction_type != "edge mzn" else []
+            new_edges = start_edges.copy()
 
             T , new_edges = Interdict(
                     n=n,
@@ -360,7 +371,8 @@ for run_idx, run_seed in enumerate(seeds.spawn(runs), start=1):
                     rng=interdict_rng,
                     layout=layout,
                     influensers=influensers,
-                    spread=spread
+                    spread=spread,
+                    sensitivity=sensitivity,
             )
 
             data_average.append(
@@ -395,21 +407,22 @@ flatten_results = [
 max_budget = max(len(rows) for rows in flatten_results)
 print("t", np.mean(average_time))
 plt.figure(figsize=(10, 6))
-for interdiction_type in interdiction_types:
-    padded_results = np.array(
-        [pad_budget(row, max_budget) for row in results[interdiction_type]]
-    )
-
-    mean = np.mean(padded_results, axis=0)
-    plt.plot(mean, marker="o", linewidth=2, label=interdiction_type)
-
-    b_30 = next((b for b, r in enumerate(mean) if r >= 0.3), None)
-    b_50 = next((b for b, r in enumerate(mean) if r >= 0.5), None)
-    b_70 = next((b for b, r in enumerate(mean) if r >= 0.7), None)
-
-    print(f"\n{interdiction_type}")
-    print("b 30: ", b_30, "\nb 50: ", b_50, "\nb 70: ", b_70)
-    print("exp_budget=", mean)
+result_path = f"{save}.txt"
+with open(result_path, "w") as result_file:    
+    result_file.write(f"t={np.mean(average_time)}\n")    
+    for interdiction_type in interdiction_types:        
+        padded_results = np.array([pad_budget(row, max_budget) for row in results[interdiction_type]]        )       
+        mean = np.mean(padded_results, axis=0)        
+        plt.plot(mean, marker="o", linewidth=2, label=interdiction_type)        
+        b_30 = next((b for b, r in enumerate(mean) if r >= 0.3), None)        
+        b_50 = next((b for b, r in enumerate(mean) if r >= 0.5), None)        
+        b_70 = next((b for b, r in enumerate(mean) if r >= 0.7), None)        
+        print(f"\n{interdiction_type}")        
+        print("b 30: ", b_30, "\nb 50: ", b_50, "\nb 70: ", b_70)        
+        print(f"{interdiction_type}=", mean)        
+        result_file.write(f"\n{interdiction_type}\n")        
+        result_file.write(f"b 30: {b_30}\nb 50: {b_50}\nb 70: {b_70}\n")        
+        result_file.write(f"{interdiction_type}= {mean}\n")
 
 # --- Plot the result -------------------------------
 mean_infected_at_interdiciton = np.mean(infected_percentages)
@@ -422,5 +435,5 @@ plt.title(
 plt.grid(True, alpha=0.3)
 plt.legend()
 
-plt.savefig(f"Final/{n}_{int(spread[0]*100)}N_{int(spread[1]*100)}Infl_Spread.png",dpi=1200,bbox_inches='tight')
+plt.savefig(f"{save}.png",dpi=1200,bbox_inches='tight')
 plt.show()
